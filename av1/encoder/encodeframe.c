@@ -4688,6 +4688,9 @@ void av1_encode_tile(AV1_COMP *cpi, ThreadData *td, int tile_row,
   od_ec_enc_reset(&td->mb.daala_enc.ec);
   od_adapt_ctx_reset(adapt, 0);
 #endif  // #if CONFIG_PVQ
+#if CONFIG_CFL
+  td->mb.e_mbd.cfl = &this_tile->cfl;
+#endif
 
   for (mi_row = tile_info->mi_row_start; mi_row < tile_info->mi_row_end;
        mi_row += cm->mib_size) {

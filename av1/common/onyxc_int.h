@@ -418,6 +418,10 @@ typedef struct AV1Common {
   int refresh_mask;
   int invalid_delta_frame_id_minus1;
 #endif
+#if CFL_TEST
+  FILE *dqcoeff_cfl;
+  FILE *dqcoeff_dec;
+#endif
 } AV1_COMMON;
 
 #if CONFIG_REFERENCE_BUFFER
@@ -505,7 +509,11 @@ static INLINE void av1_init_macroblockd(AV1_COMMON *cm, MACROBLOCKD *xd,
 #if CONFIG_PVQ
                                         tran_low_t *pvq_ref_coeff,
 #endif
-                                        tran_low_t *dqcoeff) {
+                                        tran_low_t *dqcoeff
+#if CONFIG_CFL
+                                      , CFL_CONTEXT *cfl
+#endif
+					) {
   int i;
   for (i = 0; i < MAX_MB_PLANE; ++i) {
     xd->plane[i].dqcoeff = dqcoeff;
@@ -542,6 +550,9 @@ static INLINE void av1_init_macroblockd(AV1_COMMON *cm, MACROBLOCKD *xd,
 #endif
   xd->mi_stride = cm->mi_stride;
   xd->error_info = &cm->error;
+#if CONFIG_CFL
+  xd->cfl = cfl;
+#endif
 }
 
 static INLINE void set_skip_context(MACROBLOCKD *xd, int mi_row, int mi_col) {

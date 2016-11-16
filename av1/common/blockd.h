@@ -437,6 +437,15 @@ typedef struct macroblockd_plane {
 #define BLOCK_OFFSET(x, i) \
   ((x) + (i) * (1 << (tx_size_wide_log2[0] + tx_size_high_log2[0])))
 
+#if CONFIG_CFL
+// CFL: This will replace cfl_ctx
+typedef struct cfl_context {
+  int luma_ac_dc_coded;
+  /* Dequantized transformed coefficients of Luma used to predict Chroma.*/
+  DECLARE_ALIGNED(16, tran_low_t, luma_coeff[MAX_SB_SQUARE]);
+} CFL_CONTEXT;
+#endif
+
 typedef struct RefBuffer {
   // TODO(dkovalev): idx is not really required and should be removed, now it
   // is used in av1_onyxd_if.c
@@ -526,6 +535,9 @@ typedef struct macroblockd {
   int prev_qindex;
   int delta_qindex;
   int current_qindex;
+#endif
+#if CONFIG_CFL
+  CFL_CONTEXT *cfl;
 #endif
 } MACROBLOCKD;
 

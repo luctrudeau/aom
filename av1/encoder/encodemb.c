@@ -506,6 +506,14 @@ void av1_xform_quant(const AV1_COMMON *cm, MACROBLOCK *x, int plane, int block,
   const qm_val_t *qmatrix = pd->seg_qmatrix[seg_id][!is_inter][tx_size];
   const qm_val_t *iqmatrix = pd->seg_iqmatrix[seg_id][!is_inter][tx_size];
 #endif
+#if CONFIG_CFL
+  CFL_CONTEXT *const cfl = xd->cfl;
+  // This is 4:2:0 specific.
+  const int scale = (plane == 0) ? 4 : 8;
+  const int offset = scale * blk_row * MAX_SB_SIZE + scale + blk_col;
+  tran_low_t *const cfl_luma_coeff = &cfl->luma_coeff[offset];
+  assert(offset < MAX_SB_SQUARE);
+#endif
 
   FWD_TXFM_PARAM fwd_txfm_param;
 
@@ -600,9 +608,26 @@ void av1_xform_quant(const AV1_COMMON *cm, MACROBLOCK *x, int plane, int block,
 
   fwd_txfm(src_int16, coeff, diff_stride, &fwd_txfm_param);
   fwd_txfm(pred, ref_coeff, diff_stride, &fwd_txfm_param);
-
+#if CFL_TEST
+  if (x->pvq_coded == 1) {
+    fprintf(cm->dqcoeff_cfl, "%d, %d, %d, %d, %d,", plane, block, blk_row,
+     blk_col, x->skip_block);
+  }
+#endif
   // PVQ for inter mode block
-  if (!x->skip_block)
+  if (!x->skip_block) {
+#if CONFIG_CFL
+    // CfL is not performed during mode selection only at the end
+    if (x->pvq_coded == 1 && plane != 0 && cfl->luma_ac_dc_coded == 3) {
+      int k = 0;
+      for (j = 0; j < tx_blk_size; j++) {
+        for (i = 0; i < tx_blk_size; i++) {
+	  assert(offset + (j * MAX_SB_SIZE + i) < MAX_SB_SQUARE);
+          ref_coeff[k++] = cfl_luma_coeff[j * MAX_SB_SIZE + i];
+	}
+      }
+    }
+#endif
     skip = av1_pvq_encode_helper(&x->daala_enc,
                                  coeff,        // target original vector
                                  ref_coeff,    // reference vector
@@ -615,8 +640,42 @@ void av1_xform_quant(const AV1_COMMON *cm, MACROBLOCK *x, int plane, int block,
                                  &x->rate,  // rate measured
                                  x->pvq_speed,
                                  pvq_info);  // PVQ info for a block
+#if CONFIG_CFL
+    if (x->pvq_coded == 1 && plane == 0) {
+      cfl->luma_ac_dc_coded = pvq_info->ac_dc_coded;
+      if (pvq_info->ac_dc_coded == 3) {
+        int k = 0;
+        for (j = 0; j < tx_blk_size; j++) {
+          for (i = 0; i < tx_blk_size; i++) {
+            assert(offset + (j * MAX_SB_SIZE + i) < MAX_SB_SQUARE);
+            cfl_luma_coeff[j * MAX_SB_SIZE + i] = dqcoeff[k++];
+          }
+        }
+      }
+    }
+#endif
 
+
+#if CFL_TEST
+    if (x->pvq_coded == 1) {
+      fprintf(cm->dqcoeff_cfl, " %d,", pvq_info->ac_dc_coded);
+      if (pvq_info->ac_dc_coded == 1) {
+        fprintf(cm->dqcoeff_cfl, "%d,", dqcoeff[0]);
+      } else if (pvq_info->ac_dc_coded == 3) {
+        for (i = 0; i < tx_blk_size * tx_blk_size; i++) {
+          fprintf(cm->dqcoeff_cfl, "%d,", dqcoeff[i]);
+        }
+      }
+    }
+#endif
+  }
   x->pvq_skip[plane] = skip;
+
+#if CFL_TEST
+  if(x->pvq_coded == 1) {
+    fprintf(cm->dqcoeff_cfl, "\n");
+  }
+#endif
 
   if (!skip) mbmi->skip = 0;
 #endif  // #if !CONFIG_PVQ

@@ -358,10 +358,23 @@ static int av1_enc_alloc_mi(AV1_COMMON *cm, int mi_size) {
       (MODE_INFO **)aom_calloc(mi_size, sizeof(MODE_INFO *));
   if (!cm->prev_mi_grid_base) return 1;
 
+#if CFL_TEST
+  printf("Opening file\n");
+  cm->dqcoeff_cfl = fopen("dqcoeff_cfl.csv", "w");
+  fprintf(cm->dqcoeff_cfl,
+   "Plane, Block, Blk_Row, Blk_Col, Block_Skip, AC_DC_Coded\n");
+#endif
   return 0;
 }
 
 static void av1_enc_free_mi(AV1_COMMON *cm) {
+#if CFL_TEST
+  if (cm->dqcoeff_cfl != NULL) {
+    printf("Closing file\n");
+    fclose(cm->dqcoeff_cfl);
+    cm->dqcoeff_cfl = NULL;
+  }
+#endif
   aom_free(cm->mip);
   cm->mip = NULL;
   aom_free(cm->prev_mip);
@@ -871,7 +884,11 @@ static void update_frame_size(AV1_COMP *cpi) {
 #if CONFIG_PVQ
                        NULL,
 #endif
-                       NULL);
+                       NULL
+#if CONFIG_CFL
+                     , NULL
+#endif
+		     );
   memset(cpi->mbmi_ext_base, 0,
          cm->mi_rows * cm->mi_cols * sizeof(*cpi->mbmi_ext_base));
 
