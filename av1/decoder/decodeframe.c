@@ -368,6 +368,7 @@ static int av1_pvq_decode_helper(od_dec_ctx *dec, int16_t *ref_coeff,
   // copy int32 result back to int16
   for (i = 0; i < blk_size * blk_size; i++) dqcoeff_pvq[i] = out_int32[i];
 
+  printf("skip %d || dc %d\n", !has_dc_skip, dqcoeff_pvq[0]);
   if (!has_dc_skip || dqcoeff_pvq[0]) {
     dqcoeff_pvq[0] =
         has_dc_skip + generic_decode(dec->ec, &dec->state.adapt.model_dc[pli],
@@ -387,7 +388,11 @@ static int av1_pvq_decode_helper(od_dec_ctx *dec, int16_t *ref_coeff,
 
 static int av1_pvq_decode_helper2(MACROBLOCKD *const xd,
                                   MB_MODE_INFO *const mbmi, int plane, int row,
-                                  int col, TX_SIZE tx_size, TX_TYPE tx_type) {
+                                  int col, TX_SIZE tx_size, TX_TYPE tx_type
+#if CFL_TEST
+  , AV1_COMMON *cm
+#endif
+				  ) {
   struct macroblockd_plane *const pd = &xd->plane[plane];
   // transform block size in pixels
   int tx_blk_size = tx_size_wide[tx_size];
@@ -400,6 +405,14 @@ static int av1_pvq_decode_helper2(MACROBLOCKD *const xd,
   uint8_t *dst;
   int eob;
 
+#if CONFIG_CFL
+  CFL_CONTEXT *const cfl = xd->cfl;
+  const int scale = (plane == 0) ? 4 : 8;
+  const int offset = scale * row * MAX_SB_SIZE + scale * col;
+  tran_low_t *const cfl_luma_coeff = &cfl->luma_coeff[offset];
+  assert(offset < MAX_SB_SQUARE);
+#endif
+
   eob = 0;
   dst = &pd->dst.buf[4 * row * pd->dst.stride + 4 * col];
 
@@ -411,6 +424,10 @@ static int av1_pvq_decode_helper2(MACROBLOCKD *const xd,
       xd->daala_dec.ec,
       xd->daala_dec.state.adapt.skip_cdf[2 * tx_size + (plane != 0)], 4,
       xd->daala_dec.state.adapt.skip_increment, "skip");
+#if CFL_TEST
+  fprintf(cm->dqcoeff_dec, " %d,", ac_dc_coded);
+#endif
+
 
   if (ac_dc_coded) {
     int xdec = pd->subsampling_x;
@@ -434,10 +451,49 @@ static int av1_pvq_decode_helper2(MACROBLOCKD *const xd,
     fwd_txfm(pred, pvq_ref_coeff, diff_stride, &fwd_txfm_param);
 
     quant = &pd->seg_dequant[seg_id][0];  // aom's quantizer
+#if CONFIG_CFL
+    if (plane != 0 && cfl->luma_ac_dc_coded == 3 && ac_dc_coded == 3) {
+      int k = 0;
+      fprintf(cm->dqcoeff_dec,"swap!\n");
+      for (j = 0; j < tx_blk_size; j++) {
+        for (i = 0; i < tx_blk_size; i++) {
+	  assert(offset + (j * MAX_SB_SIZE + i) < MAX_SB_SQUARE);
+	  pvq_ref_coeff[k++] = cfl_luma_coeff[j * MAX_SB_SIZE + i];
+	}
+      }
+      assert(0);
+    }
+#endif
 
     eob = av1_pvq_decode_helper(&xd->daala_dec, pvq_ref_coeff, dqcoeff, quant,
                                 plane, tx_size, tx_type, xdec, ac_dc_coded);
+#if CONFIG_CFL
+    if (plane == 0) {
+      cfl->luma_ac_dc_coded = ac_dc_coded;
+      if (ac_dc_coded == 3) {
+        int k = 0;
+        for (j = 0; j < tx_blk_size; j++) {
+          for (i = 0; i < tx_blk_size; i++) {
+	    assert(offset + (j * MAX_SB_SIZE + i) < MAX_SB_SQUARE);
+            cfl_luma_coeff[j * MAX_SB_SIZE + i] = dqcoeff[k++];
+          }
+        }
+      }
+    }
+#endif
 
+#if CFL_TEST
+    if (plane != 0 && ac_dc_coded == 3) {
+      fprintf(cm->dqcoeff_dec, "3p,");
+      for(i = 0; i < tx_blk_size * tx_blk_size; i++){
+        fprintf(cm->dqcoeff_dec, "p%d,", cfl_luma_coeff[i]);
+      }
+    } else {
+      for(i = 0; i < tx_blk_size * tx_blk_size; i++){
+        fprintf(cm->dqcoeff_dec, " %d,", dqcoeff[i]);
+      }
+    }
+#endif
     // Since av1 does not have separate inverse transform
     // but also contains adding to predicted image,
     // pass blank dummy image to av1_inv_txfm_add_*x*(), i.e. set dst as zeros
@@ -478,7 +534,9 @@ static void predict_and_reconstruct_intra_block(AV1_COMMON *cm,
 
   av1_predict_intra_block(xd, pd->width, pd->height, tx_size, mode, dst,
                           pd->dst.stride, dst, pd->dst.stride, col, row, plane);
-
+#if CFL_TEST
+  fprintf(cm->dqcoeff_dec, "%d, %d, %d, %d,", plane, row, col, mbmi->skip);
+#endif
   if (!mbmi->skip) {
     TX_TYPE tx_type = get_tx_type(plane_type, xd, block_idx, tx_size);
 #if !CONFIG_PVQ
@@ -494,9 +552,16 @@ static void predict_and_reconstruct_intra_block(AV1_COMMON *cm,
       inverse_transform_block(xd, plane, tx_type, tx_size, dst, pd->dst.stride,
                               max_scan_line, eob);
 #else
-    av1_pvq_decode_helper2(xd, mbmi, plane, row, col, tx_size, tx_type);
+    av1_pvq_decode_helper2(xd, mbmi, plane, row, col, tx_size, tx_type
+#if CFL_TEST
+ , cm
+#endif
+  );
 #endif
   }
+#if CFL_TEST
+  fprintf(cm->dqcoeff_dec, "\n");
+#endif
 }
 
 #if CONFIG_VAR_TX
@@ -589,7 +654,11 @@ static int reconstruct_inter_block(AV1_COMMON *cm, MACROBLOCKD *const xd,
                             pd->dst.stride, max_scan_line, eob);
 #else
   eob = av1_pvq_decode_helper2(xd, &xd->mi[0]->mbmi, plane, row, col, tx_size,
-                               tx_type);
+                               tx_type
+#if CFL_TEST
+  , cm
+#endif
+  );
 #endif
   return eob;
 }
@@ -1585,7 +1654,7 @@ static void decode_block(AV1Decoder *const pbi, MACROBLOCKD *const xd,
       for (row = 0; row < max_blocks_high; row += stepr)
         for (col = 0; col < max_blocks_wide; col += stepc)
           predict_and_reconstruct_intra_block(cm, xd, r, mbmi, plane, row, col,
-                                              tx_size);
+			  tx_size);
     }
   } else {
     // Prediction
@@ -3234,7 +3303,11 @@ static const uint8_t *decode_tiles(AV1Decoder *pbi, const uint8_t *data,
 #if CONFIG_PVQ
                            td->pvq_ref_coeff,
 #endif
-                           td->dqcoeff);
+                           td->dqcoeff
+#if CONFIG_CFL
+	                 , &td->cfl
+#endif
+);
 #if CONFIG_PVQ
       daala_dec_init(&td->xd.daala_dec, &td->bit_reader.ec);
 #endif
@@ -3573,7 +3646,11 @@ static const uint8_t *decode_tiles_mt(AV1Decoder *pbi, const uint8_t *data,
 #if CONFIG_PVQ
                              twd->pvq_ref_coeff,
 #endif
-                             twd->dqcoeff);
+                             twd->dqcoeff
+#if CONFIG_CFL
+			   , &twd->cfl
+#endif
+			    );
 #if CONFIG_PVQ
         daala_dec_init(&twd->xd.daala_dec, &twd->bit_reader.ec);
 #endif

@@ -277,6 +277,9 @@ typedef struct TileDataEnc {
 #if CONFIG_PVQ
   PVQ_QUEUE pvq_q;
 #endif
+#if CONFIG_CFL
+  CFL_CONTEXT cfl;
+#endif
 } TileDataEnc;
 
 typedef struct RD_COUNTS {
