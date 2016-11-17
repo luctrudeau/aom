@@ -471,14 +471,6 @@ void av1_xform_quant(const AV1_COMMON *cm, MACROBLOCK *x, int plane, int block,
   const qm_val_t *qmatrix = pd->seg_qmatrix[seg_id][!is_inter][tx_size];
   const qm_val_t *iqmatrix = pd->seg_iqmatrix[seg_id][!is_inter][tx_size];
 #endif
-#if CONFIG_CFL
-  CFL_CONTEXT *const cfl = xd->cfl;
-  // This is 4:2:0 specific.
-  const int scale = (plane == 0) ? 4 : 8;
-  const int offset = scale * blk_row * MAX_SB_SIZE + scale + blk_col;
-  tran_low_t *const cfl_luma_coeff = &cfl->luma_coeff[offset];
-  assert(offset < MAX_SB_SQUARE);
-#endif
 
   FWD_TXFM_PARAM fwd_txfm_param;
 
@@ -525,6 +517,16 @@ void av1_xform_quant(const AV1_COMMON *cm, MACROBLOCK *x, int plane, int block,
     }
 #endif
 
+#if CONFIG_CFL
+  int k;
+  CFL_CONTEXT *const cfl = xd->cfl;
+  // This is 4:2:0 specific.
+  const int scale = (plane == 0) ? 4 : 8;
+  const int offset = scale * blk_row * MAX_SB_SIZE + scale * blk_col;
+  tran_low_t *const cfl_luma_coeff = &cfl->luma_coeff[offset];
+  // Check that reads and writes won't overflow
+  assert(offset + (tx_blk_size * MAX_SB_SIZE + tx_blk_size) < MAX_SB_SQUARE);
+#endif
   fwd_txfm_param.tx_type = tx_type;
   fwd_txfm_param.tx_size = tx_size;
   fwd_txfm_param.fwd_txfm_opt = fwd_txfm_opt_list[xform_quant_idx];
@@ -582,11 +584,15 @@ void av1_xform_quant(const AV1_COMMON *cm, MACROBLOCK *x, int plane, int block,
   if (!x->skip_block) {
 #if CONFIG_CFL
     // CfL is not performed during mode selection only at the end
-    if (x->pvq_coded == 1 && plane != 0 && cfl->luma_ac_dc_coded == 3) {
-      int k = 0;
+    // Also, an intra check is needed. Signaling CfL would simplify
+    // this.
+
+    // Replace transformed prediction with Luma dequantized transformed
+    // coeffs.
+    if (x->pvq_coded == 1 && plane != 0) {
+      k = 0;
       for (j = 0; j < tx_blk_size; j++) {
         for (i = 0; i < tx_blk_size; i++) {
-	  assert(offset + (j * MAX_SB_SIZE + i) < MAX_SB_SQUARE);
           ref_coeff[k++] = cfl_luma_coeff[j * MAX_SB_SIZE + i];
 	}
       }
@@ -605,13 +611,16 @@ void av1_xform_quant(const AV1_COMMON *cm, MACROBLOCK *x, int plane, int block,
                                  x->pvq_speed,
                                  pvq_info);  // PVQ info for a block
 #if CONFIG_CFL
-    if (x->pvq_coded == 1 && plane == 0) {
-      cfl->luma_ac_dc_coded = pvq_info->ac_dc_coded;
-      if (pvq_info->ac_dc_coded == 3) {
-        int k = 0;
+    if (x->pvq_coded == 1) {
+      if (plane == 0) {
+	// Zero out the coeffs if they are skipped.
+	if (pvq_info->ac_dc_coded == 0) {
+          for (i = 0; i < tx_blk_size * tx_blk_size; i++)
+	    dqcoeff[i] = 0;
+	}
+        k = 0;
         for (j = 0; j < tx_blk_size; j++) {
           for (i = 0; i < tx_blk_size; i++) {
-            assert(offset + (j * MAX_SB_SIZE + i) < MAX_SB_SQUARE);
             cfl_luma_coeff[j * MAX_SB_SIZE + i] = dqcoeff[k++];
           }
         }
@@ -619,16 +628,11 @@ void av1_xform_quant(const AV1_COMMON *cm, MACROBLOCK *x, int plane, int block,
     }
 #endif
 
-
 #if CFL_TEST
     if (x->pvq_coded == 1) {
       fprintf(cm->dqcoeff_cfl, " %d,", pvq_info->ac_dc_coded);
-      if (pvq_info->ac_dc_coded == 1) {
-        fprintf(cm->dqcoeff_cfl, "%d,", dqcoeff[0]);
-      } else if (pvq_info->ac_dc_coded == 3) {
-        for (i = 0; i < tx_blk_size * tx_blk_size; i++) {
-          fprintf(cm->dqcoeff_cfl, "%d,", dqcoeff[i]);
-        }
+      for (i = 0; i < tx_blk_size * tx_blk_size; i++) {
+        fprintf(cm->dqcoeff_cfl, "%d,", dqcoeff[i]);
       }
     }
 #endif

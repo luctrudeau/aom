@@ -393,7 +393,6 @@ typedef struct macroblockd_plane {
 #if CONFIG_CFL
 // CFL: This will replace cfl_ctx
 typedef struct cfl_context {
-  int luma_ac_dc_coded;
   /* Dequantized transformed coefficients of Luma used to predict Chroma.*/
   DECLARE_ALIGNED(16, tran_low_t, luma_coeff[MAX_SB_SQUARE]);
 } CFL_CONTEXT;
