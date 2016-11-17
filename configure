@@ -285,6 +285,7 @@ EXPERIMENT_LIST="
     palette
     daala_ec
     pvq
+    cfl
     cb4x4
     frame_size
     delta_q
@@ -464,6 +465,9 @@ post_process_cmdline() {
 
     # Enable daala_ec by default
     ! enabled ans && soft_enable daala_ec
+
+    # Enable PVQ if CFL enabled
+    enabled cfl && enable_feature pvq
 
     # Fix up experiment dependencies
     enabled ec_adapt && enable_feature ec_multisymbol
