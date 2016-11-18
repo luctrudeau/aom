@@ -123,6 +123,10 @@ AV1_COMMON_SRCS-yes += common/pvq_state.c
 AV1_COMMON_SRCS-yes += common/pvq_state.h
 AV1_COMMON_SRCS-yes += common/laplace_tables.c
 endif
+ifeq ($(CONFIG_CFL),yes)
+AV1_COMMON_SRCS-yes += common/cfl.c
+AV1_COMMON_SRCS-yes += common/cfl.h
+endif
 
 ifneq ($(CONFIG_AOM_HIGHBITDEPTH),yes)
 AV1_COMMON_SRCS-$(HAVE_DSPR2)  += common/mips/dspr2/itrans4_dspr2.c

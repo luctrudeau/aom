@@ -405,14 +405,15 @@ static int av1_pvq_decode_helper2(MACROBLOCKD *const xd,
   int eob;
 
 #if CONFIG_CFL
-  int k;
+  // Force DCT_DCT transform (for now)
+  tx_type = DCT_DCT;
   CFL_CONTEXT *const cfl = xd->cfl;
   // Only compatible with 4:2:0 (for now).
   const int scale = (plane == 0) ? 4 : 8;
   const int offset = scale * row * MAX_SB_SIZE + scale * col;
   tran_low_t *const cfl_luma_coeff = &cfl->luma_coeff[offset];
   // Check that reads and writes won't overflow
-  assert(offset + (tx_blk_size * MAX_SB_SIZE + tx_blk_size) < MAX_SB_SQUARE);
+  assert(offset + ((tx_blk_size-1) * MAX_SB_SIZE + (tx_blk_size-1)) < MAX_SB_SQUARE);
 #endif
 
   eob = 0;
@@ -453,31 +454,14 @@ static int av1_pvq_decode_helper2(MACROBLOCKD *const xd,
 
     quant = &pd->seg_dequant[seg_id][0];  // aom's quantizer
 #if CONFIG_CFL
-    // Replace Chroma prediction with dequantized transform Luma coefficients
-    // TODO(ltrudeau) Check if scaling is required 
     if (plane != 0) {
-      k = 0;
-      for (j = 0; j < tx_blk_size; j++) {
-        for (i = 0; i < tx_blk_size; i++) {
-          pvq_ref_coeff[k++] = cfl_luma_coeff[j * MAX_SB_SIZE + i];
-	}
-      }
+      // Replace Chroma prediction with dequantized transform Luma coefficients
+      clf_load_predictor(cfl_luma_coeff, pvq_ref_coeff, tx_blk_size);
     }
 #endif
 
     eob = av1_pvq_decode_helper(&xd->daala_dec, pvq_ref_coeff, dqcoeff, quant,
                                 plane, tx_size, tx_type, xdec, ac_dc_coded);
-#if CONFIG_CFL
-    // Store Luma transform dequantized coefficients as predictors for Chroma
-    if (plane == 0) {
-      k = 0;
-      for (j = 0; j < tx_blk_size; j++) {
-        for (i = 0; i < tx_blk_size; i++) {
-          cfl_luma_coeff[j * MAX_SB_SIZE + i] = dqcoeff[k++];
-        }
-      }
-    }
-#endif
 
 #if CFL_TEST
     for(i = 0; i < tx_blk_size * tx_blk_size; i++){
@@ -495,17 +479,31 @@ static int av1_pvq_decode_helper2(MACROBLOCKD *const xd,
   }
 #if CONFIG_CFL
    else {
-    // Zero out the luma coeff when AC and DC are not coded
-    // This results in a zero prediction vector when chroma is coded but not
-    // luma is not. Using the transform coefficients might be better. This will
-    // be fixed when CfL is signaled.
     if (plane == 0) {
-      for (j = 0; j < tx_blk_size; j++) {
+      // When both AC and DC are skipped by PVQ, for the Luma plane they are still
+      // needed as predictors for the Chroma plane.
+      //
+      // ** This is probably done in another function, and should probably be moved
+      // in this function for better cohesion and to reduce code repetition **
+      //
+      for (j = 0; j < tx_blk_size; j++)
         for (i = 0; i < tx_blk_size; i++) {
-          cfl_luma_coeff[j * MAX_SB_SIZE + i] = 0;
+          pred[diff_stride * j + i] = dst[pd->dst.stride * j + i];
         }
-      }
+      FWD_TXFM_PARAM fwd_txfm_param;
+      int seg_id = mbmi->segment_id;
+      fwd_txfm_param.tx_type = tx_type;
+      fwd_txfm_param.tx_size = tx_size;
+      fwd_txfm_param.fwd_txfm_opt = FWD_TXFM_OPT_NORMAL;
+      fwd_txfm_param.rd_transform = 0;
+      fwd_txfm_param.lossless = xd->lossless[seg_id];
+      fwd_txfm(pred, pvq_ref_coeff, diff_stride, &fwd_txfm_param);
     }
+  }
+
+  if (plane == 0) {
+    cfl_store_predictor(cfl_luma_coeff, pvq_ref_coeff, dqcoeff, ac_dc_coded,
+		        tx_blk_size);
   }
 #endif
   return eob;
@@ -556,6 +554,9 @@ static void predict_and_reconstruct_intra_block(AV1_COMMON *cm,
       inverse_transform_block(xd, plane, tx_type, tx_size, dst, pd->dst.stride,
                               max_scan_line, eob);
 #else
+#if CFL_TEST
+    fprintf(cm->dqcoeff_dec, "%d,", tx_type);
+#endif
     av1_pvq_decode_helper2(xd, mbmi, plane, row, col, tx_size, tx_type
 #if CFL_TEST
  , cm

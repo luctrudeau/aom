@@ -31,6 +31,9 @@
 #include "av1/common/pvq_state.h"
 #include "av1/decoder/decint.h"
 #endif
+#if CONFIG_CFL
+#include "av1/common/cfl.h"
+#endif
 
 #ifdef __cplusplus
 extern "C" {
@@ -390,14 +393,6 @@ typedef struct macroblockd_plane {
 
 #define BLOCK_OFFSET(x, i) ((x) + (i)*16)
 
-#if CONFIG_CFL
-// CFL: This will replace cfl_ctx
-typedef struct cfl_context {
-  /* Dequantized transformed coefficients of Luma used to predict Chroma.*/
-  DECLARE_ALIGNED(16, tran_low_t, luma_coeff[MAX_SB_SQUARE]);
-} CFL_CONTEXT;
-#endif
-
 typedef struct RefBuffer {
   // TODO(dkovalev): idx is not really required and should be removed, now it
   // is used in av1_onyxd_if.c
@@ -697,6 +692,11 @@ static INLINE TX_TYPE get_tx_type(PLANE_TYPE plane_type, const MACROBLOCKD *xd,
                                   int block_idx, TX_SIZE tx_size) {
   const MODE_INFO *const mi = xd->mi[0];
   const MB_MODE_INFO *const mbmi = &mi->mbmi;
+
+#if CONFIG_CFL
+  // CfL only supports DCT-DCT for now
+  return DCT_DCT;
+#endif
 
   if (FIXED_TX_TYPE)
     return get_default_tx_type(plane_type, xd, block_idx, tx_size);
