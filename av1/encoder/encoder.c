@@ -359,21 +359,14 @@ static int av1_enc_alloc_mi(AV1_COMMON *cm, int mi_size) {
   if (!cm->prev_mi_grid_base) return 1;
 
 #if CFL_TEST
-  printf("Opening file\n");
-  cm->dqcoeff_cfl = fopen("dqcoeff_cfl.csv", "w");
-  fprintf(cm->dqcoeff_cfl,
-   "Plane, Block, Blk_Row, Blk_Col, Block_Skip, AC_DC_Coded\n");
+  open_cfl_log("cfl_enc.csv");
 #endif
   return 0;
 }
 
 static void av1_enc_free_mi(AV1_COMMON *cm) {
 #if CFL_TEST
-  if (cm->dqcoeff_cfl != NULL) {
-    printf("Closing file\n");
-    fclose(cm->dqcoeff_cfl);
-    cm->dqcoeff_cfl = NULL;
-  }
+  close_cfl_log();
 #endif
   aom_free(cm->mip);
   cm->mip = NULL;
