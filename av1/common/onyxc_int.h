@@ -418,10 +418,6 @@ typedef struct AV1Common {
   int refresh_mask;
   int invalid_delta_frame_id_minus1;
 #endif
-#if CFL_TEST
-  FILE *dqcoeff_cfl;
-  FILE *dqcoeff_dec;
-#endif
 } AV1_COMMON;
 
 #if CONFIG_REFERENCE_BUFFER

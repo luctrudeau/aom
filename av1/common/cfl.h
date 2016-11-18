@@ -11,10 +11,22 @@
 #ifndef AV1_COMMON_CFL_H_
 #define AV1_COMMON_CFL_H_
 
+#include <stdio.h>
+#include <assert.h>
+
 #include "aom_dsp/aom_dsp_common.h"
+#include "av1/common/enums.h"
 
 #ifdef __cplusplus
 extern "C" {
+#endif
+
+#if CFL_TEST
+extern FILE *_cfl_log;
+
+void open_cfl_log(const char* filename);
+
+void close_cfl_log();
 #endif
 
 // CFL: This will replace cfl_ctx
@@ -26,8 +38,8 @@ typedef struct cfl_context {
 } CFL_CONTEXT;
 
 
-void cfl_load_predictor(tran_low_t *const cfl_luma_coeff,
-		const tran_low_t *const ref_coeff, int tx_blk_size);
+void cfl_load_predictor(const tran_low_t *const cfl_luma_coeff,
+		tran_low_t *const ref_coeff, int tx_blk_size);
 
 void cfl_store_predictor(tran_low_t *const cfl_luma_coeff, 
 		const tran_low_t *const ref_coeff,

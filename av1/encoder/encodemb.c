@@ -566,6 +566,7 @@ void av1_xform_quant(const AV1_COMMON *cm, MACROBLOCK *x, int plane, int block,
 #if CONFIG_CFL
   tx_type = DCT_DCT;
   int k;
+  // TODO(ltrudeau) if luma tx_size == chroma tx_size in 4:2:0 use TF Merge
   CFL_CONTEXT *const cfl = xd->cfl;
   // This is 4:2:0 specific.
   const int scale = (plane == 0) ? 4 : 8;
@@ -615,7 +616,7 @@ void av1_xform_quant(const AV1_COMMON *cm, MACROBLOCK *x, int plane, int block,
   fwd_txfm(pred, ref_coeff, diff_stride, &fwd_txfm_param);
 #if CFL_TEST
   if (x->pvq_coded == 1) {
-    fprintf(cm->dqcoeff_cfl, "%d, %d, %d, %d, %d, %d,", plane, tx_type, block, blk_row,
+    fprintf(_cfl_log, "%d,%d,%d,%d,%d,", plane, tx_blk_size, blk_row,
      blk_col, x->skip_block);
   }
 #endif
@@ -653,21 +654,12 @@ void av1_xform_quant(const AV1_COMMON *cm, MACROBLOCK *x, int plane, int block,
 			  tx_blk_size);         // Transform block size
     }
 #endif
-
-#if CFL_TEST
-    if (x->pvq_coded == 1) {
-      fprintf(cm->dqcoeff_cfl, " %d,", pvq_info->ac_dc_coded);
-      for (i = 0; i < tx_blk_size * tx_blk_size; i++) {
-        fprintf(cm->dqcoeff_cfl, "%d,", dqcoeff[i]);
-      }
-    }
-#endif
   }
   x->pvq_skip[plane] = skip;
 
 #if CFL_TEST
   if(x->pvq_coded == 1) {
-    fprintf(cm->dqcoeff_cfl, "\n");
+    fprintf(_cfl_log, "\n");
   }
 #endif
 

@@ -74,9 +74,7 @@ static void av1_dec_setup_mi(AV1_COMMON *cm) {
 
 static int av1_dec_alloc_mi(AV1_COMMON *cm, int mi_size) {
 #if CFL_TEST
-  printf("Open file\n");
-  cm->dqcoeff_dec = fopen("dqcoeff_dec.csv", "w");
-  fprintf(cm->dqcoeff_dec, "Plane, Blk_Row, Blk_Col, Block_Skip, AC_DC_Coded\n");
+  open_cfl_log("cfl_dec.csv");
 #endif
   cm->mip = aom_calloc(mi_size, sizeof(*cm->mip));
   if (!cm->mip) return 1;
@@ -88,10 +86,7 @@ static int av1_dec_alloc_mi(AV1_COMMON *cm, int mi_size) {
 
 static void av1_dec_free_mi(AV1_COMMON *cm) {
 #if CFL_TEST
-  if (cm->dqcoeff_dec != NULL) {
-    printf("Closing file\n");
-    fclose(cm->dqcoeff_dec);
-  }
+  close_cfl_log();
 #endif
   aom_free(cm->mip);
   cm->mip = NULL;
