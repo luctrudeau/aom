@@ -564,14 +564,17 @@ void av1_xform_quant(const AV1_COMMON *cm, MACROBLOCK *x, int plane, int block,
   (void)ctx;
 
 #if CONFIG_CFL
+  tx_type = DCT_DCT;
   int k;
   CFL_CONTEXT *const cfl = xd->cfl;
   // This is 4:2:0 specific.
   const int scale = (plane == 0) ? 4 : 8;
   const int offset = scale * blk_row * MAX_SB_SIZE + scale * blk_col;
   tran_low_t *const cfl_luma_coeff = &cfl->luma_coeff[offset];
-  // Check that reads and writes won't overflow
-  assert(offset + (tx_blk_size * MAX_SB_SIZE + tx_blk_size) < MAX_SB_SQUARE);
+  if (x->pvq_coded == 1) {
+    // Check that reads and writes won't overflow
+    assert(offset + ((tx_blk_size-1) * MAX_SB_SIZE + (tx_blk_size-1)) < MAX_SB_SQUARE);
+  }
 #endif
   fwd_txfm_param.tx_type = tx_type;
   fwd_txfm_param.tx_size = tx_size;
@@ -612,7 +615,7 @@ void av1_xform_quant(const AV1_COMMON *cm, MACROBLOCK *x, int plane, int block,
   fwd_txfm(pred, ref_coeff, diff_stride, &fwd_txfm_param);
 #if CFL_TEST
   if (x->pvq_coded == 1) {
-    fprintf(cm->dqcoeff_cfl, "%d, %d, %d, %d, %d,", plane, block, blk_row,
+    fprintf(cm->dqcoeff_cfl, "%d, %d, %d, %d, %d, %d,", plane, tx_type, block, blk_row,
      blk_col, x->skip_block);
   }
 #endif
@@ -626,12 +629,7 @@ void av1_xform_quant(const AV1_COMMON *cm, MACROBLOCK *x, int plane, int block,
     // Replace transformed prediction with Luma dequantized transformed
     // coeffs.
     if (x->pvq_coded == 1 && plane != 0) {
-      k = 0;
-      for (j = 0; j < tx_blk_size; j++) {
-        for (i = 0; i < tx_blk_size; i++) {
-          ref_coeff[k++] = cfl_luma_coeff[j * MAX_SB_SIZE + i];
-	}
-      }
+      cfl_load_predictor(cfl_luma_coeff, ref_coeff, tx_blk_size);
     }
 #endif
     skip = av1_pvq_encode_helper(&x->daala_enc,
@@ -647,20 +645,12 @@ void av1_xform_quant(const AV1_COMMON *cm, MACROBLOCK *x, int plane, int block,
                                  x->pvq_speed,
                                  pvq_info);  // PVQ info for a block
 #if CONFIG_CFL
-    if (x->pvq_coded == 1) {
-      if (plane == 0) {
-	// Zero out the coeffs if they are skipped.
-	if (pvq_info->ac_dc_coded == 0) {
-          for (i = 0; i < tx_blk_size * tx_blk_size; i++)
-	    dqcoeff[i] = 0;
-	}
-        k = 0;
-        for (j = 0; j < tx_blk_size; j++) {
-          for (i = 0; i < tx_blk_size; i++) {
-            cfl_luma_coeff[j * MAX_SB_SIZE + i] = dqcoeff[k++];
-          }
-        }
-      }
+    if (x->pvq_coded == 1 && plane == 0) {
+      cfl_store_predictor(cfl_luma_coeff,       // Prediction vector for Chroma
+		          ref_coeff,            // Reference vector
+			  dqcoeff,              // De-quantized vector
+			  pvq_info->ac_dc_coded,// PVQ skip flags
+			  tx_blk_size);         // Transform block size
     }
 #endif
 
