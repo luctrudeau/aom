@@ -11,7 +11,7 @@
 
 #include "av1/common/cfl.h"
 
-#if CFL_TEST
+#if CONFIG_CFL_TEST
 FILE *_cfl_log = NULL;
 
 void open_cfl_log(const char *filename) {
@@ -41,7 +41,7 @@ void cfl_set_luma(CFL_CONTEXT *const cfl, int blk_row, int blk_col,
   cfl->luma_tx_blk_size = tx_blk_size;
   cfl->luma_coeff_ptr = &cfl->luma_coeff[coeff_offset];
 
-#if CFL_TEST
+#if CONFIG_CFL_TEST
   fprintf(_cfl_log, "y,%d,%d,%d,", tx_blk_size, blk_row, blk_col);
 #endif
 }
@@ -63,7 +63,7 @@ void cfl_set_chroma(CFL_CONTEXT *const cfl, int blk_row, int blk_col,
   cfl->luma_tx_blk_size = cfl->luma_tx_blk_sizes[luma_tx_offset];
   cfl->luma_coeff_ptr = &cfl->luma_coeff[coeff_offset];
 
-#if CFL_TEST
+#if CONFIG_CFL_TEST
   fprintf(_cfl_log, "c,%d,%d,%d,", tx_blk_size, blk_row, blk_col);
 #endif
 }
@@ -85,7 +85,7 @@ void cfl_load_predictor(const CFL_CONTEXT *const cfl,
     }
   }
 
-#if CFL_TEST
+#if CONFIG_CFL_TEST
   fprintf(_cfl_log, "\nLoad,");
   for (i = 0; i < tx_blk_size * tx_blk_size; i++){
     fprintf(_cfl_log, "%d,", ref_coeff[i]);
@@ -148,7 +148,7 @@ void cfl_store_predictor(CFL_CONTEXT *const cfl,
     default:
       assert(0);
   }
-#if CFL_TEST
+#if CONFIG_CFL_TEST
   fprintf(_cfl_log, "%d\nDequant,", ac_dc_coded);
   if(ac_dc_coded) {
     for (i = 0; i < tx_blk_size * tx_blk_size; i++) {

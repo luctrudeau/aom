@@ -288,6 +288,7 @@ EXPERIMENT_LIST="
     daala_ec
     pvq
     cfl
+    cfl_test
     cb4x4
     frame_size
     delta_q
