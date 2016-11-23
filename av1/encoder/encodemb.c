@@ -565,16 +565,13 @@ void av1_xform_quant(const AV1_COMMON *cm, MACROBLOCK *x, int plane, int block,
 
 #if CONFIG_CFL
   tx_type = DCT_DCT;
-  int k;
-  // TODO(ltrudeau) if luma tx_size == chroma tx_size in 4:2:0 use TF Merge
   CFL_CONTEXT *const cfl = xd->cfl;
-  // This is 4:2:0 specific.
-  const int scale = (plane == 0) ? 4 : 8;
-  const int offset = scale * blk_row * MAX_SB_SIZE + scale * blk_col;
-  tran_low_t *const cfl_luma_coeff = &cfl->luma_coeff[offset];
   if (x->pvq_coded == 1) {
-    // Check that reads and writes won't overflow
-    assert(offset + ((tx_blk_size-1) * MAX_SB_SIZE + (tx_blk_size-1)) < MAX_SB_SQUARE);
+    if (plane == 0) {
+      cfl_set_luma(cfl, blk_row, blk_col, tx_blk_size);
+    } else {
+      cfl_set_chroma(cfl, blk_row, blk_col, tx_blk_size);
+    }
   }
 #endif
   fwd_txfm_param.tx_type = tx_type;
@@ -614,12 +611,6 @@ void av1_xform_quant(const AV1_COMMON *cm, MACROBLOCK *x, int plane, int block,
 
   fwd_txfm(src_int16, coeff, diff_stride, &fwd_txfm_param);
   fwd_txfm(pred, ref_coeff, diff_stride, &fwd_txfm_param);
-#if CFL_TEST
-  if (x->pvq_coded == 1) {
-    fprintf(_cfl_log, "%d,%d,%d,%d,%d,", plane, tx_blk_size, blk_row,
-     blk_col, x->skip_block);
-  }
-#endif
   // PVQ for inter mode block
   if (!x->skip_block) {
 #if CONFIG_CFL
@@ -630,7 +621,7 @@ void av1_xform_quant(const AV1_COMMON *cm, MACROBLOCK *x, int plane, int block,
     // Replace transformed prediction with Luma dequantized transformed
     // coeffs.
     if (x->pvq_coded == 1 && plane != 0) {
-      cfl_load_predictor(cfl_luma_coeff, ref_coeff, tx_blk_size);
+      cfl_load_predictor(cfl, ref_coeff, tx_blk_size);
     }
 #endif
     skip = av1_pvq_encode_helper(&x->daala_enc,
@@ -647,21 +638,14 @@ void av1_xform_quant(const AV1_COMMON *cm, MACROBLOCK *x, int plane, int block,
                                  pvq_info);  // PVQ info for a block
 #if CONFIG_CFL
     if (x->pvq_coded == 1 && plane == 0) {
-      cfl_store_predictor(cfl_luma_coeff,       // Prediction vector for Chroma
-		          ref_coeff,            // Reference vector
-			  dqcoeff,              // De-quantized vector
-			  pvq_info->ac_dc_coded,// PVQ skip flags
-			  tx_blk_size);         // Transform block size
+      cfl_store_predictor(cfl,                    // Current CfL context
+		          ref_coeff,              // Reference vector
+			  dqcoeff,                // De-quantized vector
+			  pvq_info->ac_dc_coded); // Transform block size
     }
 #endif
   }
   x->pvq_skip[plane] = skip;
-
-#if CFL_TEST
-  if(x->pvq_coded == 1) {
-    fprintf(_cfl_log, "\n");
-  }
-#endif
 
   if (!skip) mbmi->skip = 0;
 #endif  // #if !CONFIG_PVQ

@@ -408,12 +408,11 @@ static int av1_pvq_decode_helper2(MACROBLOCKD *const xd,
   // Force DCT_DCT transform (for now)
   tx_type = DCT_DCT;
   CFL_CONTEXT *const cfl = xd->cfl;
-  // Only compatible with 4:2:0 (for now).
-  const int scale = (plane == 0) ? 4 : 8;
-  const int offset = scale * row * MAX_SB_SIZE + scale * col;
-  tran_low_t *const cfl_luma_coeff = &cfl->luma_coeff[offset];
-  // Check that reads and writes won't overflow
-  assert(offset + ((tx_blk_size-1) * MAX_SB_SIZE + (tx_blk_size-1)) < MAX_SB_SQUARE);
+  if (plane == 0) {
+    cfl_set_luma(cfl, row, col, tx_blk_size);
+  } else {
+    cfl_set_chroma(cfl, row, col, tx_blk_size);
+  }
 #endif
 
   eob = 0;
@@ -453,17 +452,34 @@ static int av1_pvq_decode_helper2(MACROBLOCKD *const xd,
 #if CONFIG_CFL
     if (plane != 0) {
       // Replace Chroma prediction with dequantized transform Luma coefficients
-      cfl_load_predictor(cfl_luma_coeff, pvq_ref_coeff, tx_blk_size);
+      cfl_load_predictor(cfl, pvq_ref_coeff, tx_blk_size);
+      /*if (tx_blk_size == 4) {
+        printf("\nLuma Coeff %d: ");
+	for (j = 0; j < tx_blk_size << 1; j++) {
+          for (i = 0; i < tx_blk_size << 1; i++) {
+	    printf("%d, ", cfl_luma_coeff[j * MAX_SB_SIZE + i]);
+	  }
+	  printf("\n");
+	}
+	printf("\nTF Coeff: ");
+	for (j = 0; j < tx_blk_size; j++) {
+          for (i = 0; i < tx_blk_size; i++) {
+	    printf("%d, ", pvq_ref_coeff[j * tx_blk_size + i]);
+	  }
+	  printf("\n");
+	}
+	assert(0);
+      }*/
     }
 #endif
 
     eob = av1_pvq_decode_helper(&xd->daala_dec, pvq_ref_coeff, dqcoeff, quant,
                                 plane, tx_size, tx_type, xdec, ac_dc_coded);
-
+#if CONFIG_CFL
     if (plane == 0) {
-      cfl_store_predictor(cfl_luma_coeff, pvq_ref_coeff, dqcoeff, ac_dc_coded,
-		      tx_blk_size);
+      cfl_store_predictor(cfl, pvq_ref_coeff, dqcoeff, ac_dc_coded);
     }
+#endif
     // Since av1 does not have separate inverse transform
     // but also contains adding to predicted image,
     // pass blank dummy image to av1_inv_txfm_add_*x*(), i.e. set dst as zeros
@@ -476,11 +492,13 @@ static int av1_pvq_decode_helper2(MACROBLOCKD *const xd,
 #if CONFIG_CFL
    else {
     if (plane == 0) {
-      // When both AC and DC are skipped by PVQ, for the Luma plane they are still
-      // needed as predictors for the Chroma plane.
+      // For the luma plane, when both AC and DC are skipped by PVQ, the
+      // transformed coefficients are still needed as predictors for the Chroma
+      // plane.
       //
-      // ** This is probably done in another function, and should probably be moved
-      // in this function for better cohesion and to reduce code repetition **
+      // ** This is probably done in another function, and should probably be
+      // refactored into this function for better cohesion and to reduce code
+      // repetition **
       //
       for (j = 0; j < tx_blk_size; j++)
         for (i = 0; i < tx_blk_size; i++) {
@@ -494,10 +512,8 @@ static int av1_pvq_decode_helper2(MACROBLOCKD *const xd,
       fwd_txfm_param.rd_transform = 0;
       fwd_txfm_param.lossless = xd->lossless[seg_id];
       fwd_txfm(pred, pvq_ref_coeff, diff_stride, &fwd_txfm_param);
-      if (plane == 0) {
-        cfl_store_predictor(cfl_luma_coeff, pvq_ref_coeff, dqcoeff, ac_dc_coded,
-			tx_blk_size);
-      }
+
+      cfl_store_predictor(cfl, pvq_ref_coeff, dqcoeff, ac_dc_coded);
     }
   }
 
@@ -534,10 +550,6 @@ static void predict_and_reconstruct_intra_block(AV1_COMMON *cm,
 
   av1_predict_intra_block(xd, pd->width, pd->height, tx_size, mode, dst,
                           pd->dst.stride, dst, pd->dst.stride, col, row, plane);
-#if CFL_TEST
-  fprintf(_cfl_log, "%d,%d,%d,%d,%d,", plane, tx_size_wide[tx_size], row, col,
-		  mbmi->skip);
-#endif
   if (!mbmi->skip) {
     TX_TYPE tx_type = get_tx_type(plane_type, xd, block_idx, tx_size);
 #if !CONFIG_PVQ
@@ -556,9 +568,6 @@ static void predict_and_reconstruct_intra_block(AV1_COMMON *cm,
     av1_pvq_decode_helper2(xd, mbmi, plane, row, col, tx_size, tx_type);
 #endif
   }
-#if CFL_TEST
-  fprintf(_cfl_log, "\n");
-#endif
 }
 
 #if CONFIG_VAR_TX
