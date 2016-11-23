@@ -760,6 +760,9 @@ static INLINE TX_TYPE get_tx_type(PLANE_TYPE plane_type, const MACROBLOCKD *xd,
   const MODE_INFO *const mi = xd->mi[0];
   const MB_MODE_INFO *const mbmi = &mi->mbmi;
 
+  // @LucTrudeau THIS VERSION ALWAYS RETURNS DCT_DCT!!!!
+  return DCT_DCT;
+
   if (FIXED_TX_TYPE)
     return get_default_tx_type(plane_type, xd, block_idx, tx_size);
 
