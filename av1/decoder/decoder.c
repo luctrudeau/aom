@@ -73,7 +73,7 @@ static void av1_dec_setup_mi(AV1_COMMON *cm) {
 }
 
 static int av1_dec_alloc_mi(AV1_COMMON *cm, int mi_size) {
-#if CFL_TEST
+#if CONFIG_CFL_TEST
   open_cfl_log("cfl_dec.csv");
 #endif
   cm->mip = aom_calloc(mi_size, sizeof(*cm->mip));
@@ -85,7 +85,8 @@ static int av1_dec_alloc_mi(AV1_COMMON *cm, int mi_size) {
 }
 
 static void av1_dec_free_mi(AV1_COMMON *cm) {
-#if CFL_TEST
+
+#if CONFIG_CFL_TEST
   close_cfl_log();
 #endif
   aom_free(cm->mip);

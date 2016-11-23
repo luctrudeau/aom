@@ -21,7 +21,7 @@
 extern "C" {
 #endif
 
-#if CFL_TEST
+#if CONFIG_CFL_TEST
 extern FILE *_cfl_log;
 
 void open_cfl_log(const char* filename);

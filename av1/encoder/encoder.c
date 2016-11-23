@@ -358,14 +358,14 @@ static int av1_enc_alloc_mi(AV1_COMMON *cm, int mi_size) {
       (MODE_INFO **)aom_calloc(mi_size, sizeof(MODE_INFO *));
   if (!cm->prev_mi_grid_base) return 1;
 
-#if CFL_TEST
+#if CONFIG_CFL_TEST
   open_cfl_log("cfl_enc.csv");
 #endif
   return 0;
 }
 
 static void av1_enc_free_mi(AV1_COMMON *cm) {
-#if CFL_TEST
+#if CONFIG_CFL_TEST
   close_cfl_log();
 #endif
   aom_free(cm->mip);
