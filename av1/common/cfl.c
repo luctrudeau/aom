@@ -46,7 +46,6 @@ void cfl_set_luma(CFL_CONTEXT *const cfl, int blk_row, int blk_col,
 #endif
 }
 
-int stop = 0;
 void cfl_set_chroma(CFL_CONTEXT *const cfl, int blk_row, int blk_col,
 		int tx_blk_size) {
   // Adjust offset based on block size
@@ -67,6 +66,7 @@ void cfl_set_chroma(CFL_CONTEXT *const cfl, int blk_row, int blk_col,
   fprintf(_cfl_log, "c,%d,%d,%d,", tx_blk_size, blk_row, blk_col);
 #endif
 }
+
 void cfl_load_predictor(const CFL_CONTEXT *const cfl,
 		tran_low_t *const ref_coeff, int tx_blk_size) {
   const tran_low_t *const luma_coeff = cfl->luma_coeff_ptr;

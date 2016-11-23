@@ -67,7 +67,7 @@ void cfl_store_predictor(CFL_CONTEXT *const cfl,
     (ll) += (hl); \
     (hh) -= (lh); \
     llmhh_2__ = ((ll) - (hh)) >> 1; \
-    lh) = llmhh_2__ - (lh); \
+    (lh) = llmhh_2__ - (lh); \
     (hl) = llmhh_2__ - (hl); \
     (ll) -= (lh); \
     (hh) += (hl); \
