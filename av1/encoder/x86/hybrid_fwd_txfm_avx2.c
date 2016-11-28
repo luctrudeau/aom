@@ -959,7 +959,6 @@ static void fidtx16_avx2(__m256i *in) { txfm_scaling16_avx2(Sqrt2, in); }
 void av1_fht16x16_avx2(const int16_t *input, tran_low_t *output, int stride,
                        int tx_type) {
   __m256i in[16];
-
   switch (tx_type) {
     case DCT_DCT:
       load_buffer_16x16(input, stride, 0, 0, in);

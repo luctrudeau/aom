@@ -93,7 +93,7 @@ void av1_fdct8_new(const int32_t *input, int32_t *output, const int8_t *cos_bit,
   int32_t stage = 0;
   int32_t *bf0, *bf1;
   int32_t step[8];
-
+assert(0);
   // stage 0;
   range_check(stage, input, input, size, stage_range[stage]);
 
