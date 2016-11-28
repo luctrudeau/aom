@@ -39,7 +39,7 @@ static INLINE void range_check(const tran_low_t *input, const int size,
 #endif
 }
 
-static void fdct4(const tran_low_t *input, tran_low_t *output) {
+void fdct4(const tran_low_t *input, tran_low_t *output) {
   tran_high_t temp;
   tran_low_t step[4];
 
@@ -75,10 +75,9 @@ static void fdct4(const tran_low_t *input, tran_low_t *output) {
   range_check(output, 4, 16);
 }
 
-static void fdct8(const tran_low_t *input, tran_low_t *output) {
+void fdct8(const tran_low_t *input, tran_low_t *output) {
   tran_high_t temp;
   tran_low_t step[8];
-
   // stage 0
   range_check(input, 8, 13);
 
@@ -153,7 +152,7 @@ static void fdct8(const tran_low_t *input, tran_low_t *output) {
   range_check(output, 8, 16);
 }
 
-static void fdct16(const tran_low_t *input, tran_low_t *output) {
+void fdct16(const tran_low_t *input, tran_low_t *output) {
   tran_high_t temp;
   tran_low_t step[16];
 
@@ -1632,6 +1631,7 @@ void av1_fdct8x8_quant_c(const int16_t *input, int stride,
 
 void av1_fht8x8_c(const int16_t *input, tran_low_t *output, int stride,
                   int tx_type) {
+assert(0);
   if (tx_type == DCT_DCT) {
     aom_fdct8x8_c(input, output, stride);
   } else {
@@ -1760,6 +1760,8 @@ void av1_fht16x16_c(const int16_t *input, tran_low_t *output, int stride,
     { fidtx16, fadst16 },  // H_FLIPADST
 #endif                     // CONFIG_EXT_TX
   };
+printf("ASSERT 0!!!\n");
+  assert(0);
 
   const transform_2d ht = FHT[tx_type];
   tran_low_t out[256];

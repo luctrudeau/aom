@@ -123,6 +123,8 @@ static void fwd_txfm_8x8(const int16_t *src_diff, tran_low_t *coeff,
     case ADST_DCT:
     case DCT_ADST:
     case ADST_ADST:
+//printf("fwd_txfm_opt %d\n", fwd_txfm_opt);
+//assert(0);
       if (fwd_txfm_opt == FWD_TXFM_OPT_NORMAL)
         av1_fht8x8(src_diff, coeff, diff_stride, tx_type);
       else  // FWD_TXFM_OPT_DC
@@ -139,7 +141,7 @@ static void fwd_txfm_8x8(const int16_t *src_diff, tran_low_t *coeff,
     case V_ADST:
     case H_ADST:
     case V_FLIPADST:
-    case H_FLIPADST: av1_fht8x8(src_diff, coeff, diff_stride, tx_type); break;
+    case H_FLIPADST: av1dfht8x8(src_diff, coeff, diff_stride, tx_type); break;
     case IDTX: av1_fwd_idtx_c(src_diff, coeff, diff_stride, 8, tx_type); break;
 #endif  // CONFIG_EXT_TX
     default: assert(0);
