@@ -480,8 +480,6 @@ static FWD_TXFM_OPT fwd_txfm_opt_list[AV1_XFORM_QUANT_TYPES] = {
   FWD_TXFM_OPT_NORMAL
 };
 
-
-
 void av1_xform_quant(const AV1_COMMON *cm, MACROBLOCK *x, int plane, int block,
                      int blk_row, int blk_col, BLOCK_SIZE plane_bsize,
                      TX_SIZE tx_size, int ctx,
@@ -509,7 +507,6 @@ void av1_xform_quant(const AV1_COMMON *cm, MACROBLOCK *x, int plane, int block,
   const qm_val_t *iqmatrix = pd->seg_iqmatrix[seg_id][!is_inter][tx_size];
 #endif
 
-FILE *f_refCoeff = fopen("debug_refcoeff.csv", "a");
   FWD_TXFM_PARAM fwd_txfm_param;
 
 #if !CONFIG_PVQ
@@ -626,34 +623,8 @@ FILE *f_refCoeff = fopen("debug_refcoeff.csv", "a");
     // coeffs.
     if (x->pvq_coded == 1 && plane != 0) {
       cfl_load_predictor(cfl, ref_coeff, tx_blk_size);
-      //printf("\nrow %d col %d\n", blk_row, blk_col);
-      fprintf(_cfl_log, "Target: ");
-      int k = 0;
-      for (j = 0; j < tx_blk_size; j++) {
-        for (i = 0; i < tx_blk_size; i++) {
-          //fprintf(_cfl_log, "%d, ", src_int16[diff_stride * j + i]);
-	  if (plane == 0)
-	    fprintf(f_refCoeff, "%d,", ref_coeff[k]);
-	  fprintf(_cfl_log, "%d, ", coeff[k++]);
-        }
-      }
-      fprintf(_cfl_log, "\n");
-      printf("\n");
-
-      //printf("\nPredictor: ");
-      //k = 0;
-      //for (j = 0; j < tx_blk_size; j++) {
-      //  for (i = 0; i < tx_blk_size; i++) {
-      //    printf("%d, ", ref_coeff[k++]);
-	//}
-       // printf("\n");
-     // }
-     // assert(0);
     }
 #endif
-    if(x->pvq_coded) {
-       printf("%d %d %d %d %d\n", tx_size, tx_type, x->rate, x->pvq_speed, *pd->dequant);
-    }
     skip = av1_pvq_encode_helper(&x->daala_enc,
                                  coeff,        // target original vector
                                  ref_coeff,    // reference vector
@@ -666,13 +637,6 @@ FILE *f_refCoeff = fopen("debug_refcoeff.csv", "a");
                                  &x->rate,  // rate measured
                                  x->pvq_speed,
                                  pvq_info);  // PVQ info for a block
-    int k = 0;
-    for (j = 0; j < tx_blk_size; j++) {
-      for (i = 0; i < tx_blk_size; i++) {
-	  if (plane == 0 && x->pvq_coded)
-	    fprintf(f_refCoeff, "%d,", dqcoeff[k++]);
-      }
-    }
 #if CONFIG_CFL
     if (x->pvq_coded == 1 && plane == 0) {
       cfl_store_predictor(cfl,                    // Current CfL context
@@ -681,8 +645,6 @@ FILE *f_refCoeff = fopen("debug_refcoeff.csv", "a");
 			  pvq_info->ac_dc_coded); // PVQ skip flags
     }
 
-    if (x->pvq_coded)
-      fprintf(f_refCoeff, "\n");
     if (x->pvq_coded == 1 && plane != 0 && skip) {
      // When PVQ is skipped CfL needs to perform the inverse transform
      // and replace the prediction.
@@ -694,7 +656,6 @@ FILE *f_refCoeff = fopen("debug_refcoeff.csv", "a");
 
   if (!skip) mbmi->skip = 0;
 #endif  // #if !CONFIG_PVQ
-  fclose(f_refCoeff);
 }
 
 static void encode_block(int plane, int block, int blk_row, int blk_col,

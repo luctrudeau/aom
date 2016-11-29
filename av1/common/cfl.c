@@ -72,29 +72,21 @@ void cfl_load_predictor(const CFL_CONTEXT *const cfl,
     const tran_low_t *const luma_coeff = cfl->luma_coeff_ptr;
     const int luma_tx_blk_size = cfl->luma_tx_blk_size;
     int i, j, k = 0;
-    //if (tx_blk_size == luma_tx_blk_size) {
-      // There's a regression with TF, something must be broken
-   //   od_tf_up_hv_lp(ref_coeff, tx_blk_size, luma_coeff, MAX_SB_SIZE,
-//		      tx_blk_size, tx_blk_size, tx_blk_size);
-   // } else {
-   //   assert(tx_blk_size * 2 == luma_tx_blk_size);
-#if CONFIG_CFL_TEST
-    //fprintf(_cfl_log, "\nBefore Load,");
-    //for (i = 0; i < tx_blk_size * tx_blk_size; i++){
-    //  fprintf(_cfl_log, "%d,", ref_coeff[i]);
-    //}
-    //fprintf(_cfl_log, "\n");
-#endif
+    if (tx_blk_size == luma_tx_blk_size) {
+      od_tf_up_hv_lp(ref_coeff, tx_blk_size, luma_coeff, MAX_SB_SIZE,
+		      tx_blk_size, tx_blk_size, tx_blk_size);
+    } else {
+      assert(tx_blk_size * 2 == luma_tx_blk_size);
       for (j = 0; j < tx_blk_size; j++) {
         for (i = 0; i < tx_blk_size; i++) {
           ref_coeff[k++] = luma_coeff[j * MAX_SB_SIZE + i];
         }
       }
-      if (tx_blk_size < 16 && tx_blk_size < luma_tx_blk_size) {
-	ref_coeff[0] >>= 1;
-      }
-  //  }
-
+    }
+    // The 32x32 transform is scaled. If smaller scale DC
+    if (tx_blk_size < 16) {
+      ref_coeff[0] >>= 1;
+    }
 #if CONFIG_CFL_TEST
     fprintf(_cfl_log, "\nLoad,");
     for (i = 0; i < tx_blk_size * tx_blk_size; i++){
@@ -159,12 +151,6 @@ void cfl_store_predictor(CFL_CONTEXT *const cfl,
       assert(0);
   }
 #if CONFIG_CFL_TEST
-/*  fprintf(_cfl_log, "%d\nDequant,", ac_dc_coded);
-  if(ac_dc_coded) {
-    for (i = 0; i < tx_blk_size * tx_blk_size; i++) {
-      fprintf(_cfl_log, "%d,", dqcoeff[i]);
-    }
-  }*/
   fprintf(_cfl_log, "\nStore(%d),", ac_dc_coded);
   for (j = 0; j < tx_blk_size; j++) {
     for (i = 0; i < tx_blk_size; i++) {

@@ -492,8 +492,6 @@ static int av1_pvq_decode_helper2_cfl(MACROBLOCKD *const xd,
       xd->daala_dec.state.adapt.skip_cdf[2 * tx_size + (plane != 0)], 4,
       xd->daala_dec.state.adapt.skip_increment, "skip");
 
-  //printf("%d %d\n", plane, ac_dc_coded);
-
   int xdec = pd->subsampling_x;
   int seg_id = mbmi->segment_id;
   int16_t *quant;
@@ -533,18 +531,8 @@ static int av1_pvq_decode_helper2_cfl(MACROBLOCKD *const xd,
   for (j = 0; j < tx_blk_size; j++)
     for (i = 0; i < tx_blk_size; i++) dst[j * pd->dst.stride + i] = 0;
 
-/*  if (plane == 0) {
-    for (i = 0; i < tx_blk_size * tx_blk_size; i++){
-      printf("%d, ", pvq_ref_coeff[i]);
-    }
-    printf("\n");
-  }*/
-
   inverse_transform_block(xd, plane, tx_type, tx_size, dst, pd->dst.stride,
                             max_scan_line, eob);
-
-  //for (j = 0; j < tx_blk_size; j++)
-  //  for (i = 0; i < tx_blk_size; i++) assert(dst[j * pd->dst.stride + i] == 0);
   return eob;
 }
 #endif
@@ -594,7 +582,6 @@ static void predict_and_reconstruct_intra_block(AV1_COMMON *cm,
       inverse_transform_block(xd, plane, tx_type, tx_size, dst, pd->dst.stride,
                               max_scan_line, eob);
 #else
-    printf("%d %d %d %d %d\n", plane, tx_size, tx_type, mbmi->mode, mbmi->uv_mode);
 #if CONFIG_CFL
     av1_pvq_decode_helper2_cfl(xd, mbmi, plane, row, col, tx_size, tx_type);
 #else
