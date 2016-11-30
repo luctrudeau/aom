@@ -64,7 +64,7 @@ void cfl_store_predictor(CFL_CONTEXT *const cfl,
   It is defined in a macro here so it can be reused in various places.*/
 #define OD_HAAR_KERNEL(ll, lh, hl, hh) \
   do { \
-    tran_low_t llmhh_2__; \
+    tran_high_t llmhh_2__; \
     (ll) += (hl); \
     (hh) -= (lh); \
     llmhh_2__ = ((ll) - (hh)) >> 1; \

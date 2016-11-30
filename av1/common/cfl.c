@@ -93,10 +93,10 @@ void cfl_load_predictor(const CFL_CONTEXT *const cfl,
     const int luma_tx_blk_size = cfl->luma_tx_blk_size;
     int i, j, k = 0;
     if (tx_blk_size == luma_tx_blk_size) {
-    //  od_tf_up_hv_lp(ref_coeff, tx_blk_size, luma_coeff, MAX_SB_SIZE,
-//		      tx_blk_size, tx_blk_size, tx_blk_size);
- //     ref_coeff[0] >>= 1;
-      cfl_average_blocks(ref_coeff, luma_coeff, tx_blk_size);
+      od_tf_up_hv_lp(ref_coeff, tx_blk_size, luma_coeff, MAX_SB_SIZE,
+		      tx_blk_size, tx_blk_size, tx_blk_size);
+     // ref_coeff[0] >>= 1;
+     // cfl_average_blocks(ref_coeff, luma_coeff, tx_blk_size);
     } else {
       assert(tx_blk_size * 2 == luma_tx_blk_size);
       for (j = 0; j < tx_blk_size; j++) {
@@ -194,10 +194,10 @@ void od_tf_up_hv_lp(tran_low_t *dst, int dstride,
     int vswap;
     vswap = y & 1;
     for (x = 0; x < n >> 1; x++) {
-      tran_low_t ll;
-      tran_low_t lh;
-      tran_low_t hl;
-      tran_low_t hh;
+      tran_high_t ll;
+      tran_high_t lh;
+      tran_high_t hl;
+      tran_high_t hh;
       int hswap;
       ll = src[y*sstride + x];
       lh = src[y*sstride + x + dx];
@@ -205,6 +205,10 @@ void od_tf_up_hv_lp(tran_low_t *dst, int dstride,
       hh = src[(y + dy)*sstride + x + dx];
       /*We swap lh and hl for compatibility with od_tf_up_hv.*/
       OD_HAAR_KERNEL(ll, hl, lh, hh);
+      ll >>=1;
+      lh >>=1;
+      hl >>=1;
+      hh >>=1;
       hswap = x & 1;
       dst[(2*y + vswap)*dstride + 2*x + hswap] = ll;
       dst[(2*y + vswap)*dstride + 2*x + 1 - hswap] = lh;
