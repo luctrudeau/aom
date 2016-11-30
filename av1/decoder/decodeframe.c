@@ -559,8 +559,6 @@ static int av1_pvq_decode_helper2_cfl(MACROBLOCKD *const xd,
 }
 #endif
 
-int s = 0;
-
 static void predict_and_reconstruct_intra_block(AV1_COMMON *cm,
                                                 MACROBLOCKD *const xd,
 #if CONFIG_ANS
@@ -610,8 +608,6 @@ static void predict_and_reconstruct_intra_block(AV1_COMMON *cm,
     av1_pvq_decode_helper2(xd, mbmi, plane, row, col, tx_size, tx_type);
 #endif
 #endif
-  } else {
-    printf("Skips %d\n", s++);
   }
 }
 
