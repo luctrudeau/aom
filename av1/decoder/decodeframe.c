@@ -525,6 +525,28 @@ static int av1_pvq_decode_helper2_cfl(MACROBLOCKD *const xd,
     cfl_store_predictor(cfl, pvq_ref_coeff, dqcoeff, ac_dc_coded);
   }
 
+#if CONFIG_CFL_TEST
+  if (plane == 1) {
+    for (j = 0; j < tx_blk_size; j++)
+      for (i = 0; i < tx_blk_size; i++) dst[j * pd->dst.stride + i] = 0;
+
+    INV_TXFM_PARAM inv_txfm_param;
+    inv_txfm_param.tx_type = tx_type;
+    inv_txfm_param.tx_size = tx_size;
+    inv_txfm_param.eob = eob;
+    inv_txfm_param.lossless = xd->lossless[xd->mi[0]->mbmi.segment_id];
+    inv_txfm_add(pvq_ref_coeff, dst, pd->dst.stride, &inv_txfm_param);
+
+    fprintf(_cfl_chroma_pred, "%d, %d, %d\n", row, col, tx_blk_size);
+
+    for (j = 0; j < tx_blk_size; j++) {
+      for (i = 0; i < tx_blk_size; i++) {
+        fprintf(_cfl_chroma_pred, "%d,", dst[j * pd->dst.stride + i]);
+      }
+      fprintf(_cfl_chroma_pred, "\n");
+    }
+  }
+#endif
   // Since av1 does not have separate inverse transform
   // but also contains adding to predicted image,
   // pass blank dummy image to av1_inv_txfm_add_*x*(), i.e. set dst as zeros

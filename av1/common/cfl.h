@@ -23,6 +23,7 @@ extern "C" {
 
 #if CONFIG_CFL_TEST
 extern FILE *_cfl_log;
+extern FILE *_cfl_chroma_pred;
 
 void open_cfl_log(const char* filename);
 

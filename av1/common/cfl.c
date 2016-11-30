@@ -13,16 +13,22 @@
 
 #if CONFIG_CFL_TEST
 FILE *_cfl_log = NULL;
+FILE *_cfl_chroma_pred = NULL;
 
 void open_cfl_log(const char *filename) {
   _cfl_log = fopen(filename, "w");
   fprintf(_cfl_log, "Plane, Size, Blk_Row, Blk_Col, Block_Skip, AC_DC_Coded\n");
+  _cfl_chroma_pred = fopen("chroma_pred.csv", "w");
 }
 
 void close_cfl_log() {
   if (_cfl_log != NULL) {
     fclose(_cfl_log);
     _cfl_log = NULL;
+  }
+  if (_cfl_chroma_pred != NULL) {
+    fclose(_cfl_chroma_pred);
+    _cfl_chroma_pred = NULL;
   }
 }
 #endif
@@ -75,17 +81,18 @@ void cfl_load_predictor(const CFL_CONTEXT *const cfl,
     if (tx_blk_size == luma_tx_blk_size) {
       od_tf_up_hv_lp(ref_coeff, tx_blk_size, luma_coeff, MAX_SB_SIZE,
 		      tx_blk_size, tx_blk_size, tx_blk_size);
+      ref_coeff[0] >>= 1;
     } else {
       assert(tx_blk_size * 2 == luma_tx_blk_size);
       for (j = 0; j < tx_blk_size; j++) {
         for (i = 0; i < tx_blk_size; i++) {
-          ref_coeff[k++] = luma_coeff[j * MAX_SB_SIZE + i];
+	  if ( tx_blk_size < 16 ) {
+            ref_coeff[k++] = luma_coeff[j * MAX_SB_SIZE + i] >> 1;
+	  } else {
+            ref_coeff[k++] = luma_coeff[j * MAX_SB_SIZE + i];
+	  }
         }
       }
-    }
-    // The 32x32 transform is scaled. If smaller scale DC
-    if (tx_blk_size < 16) {
-      ref_coeff[0] >>= 1;
     }
 #if CONFIG_CFL_TEST
     fprintf(_cfl_log, "\nLoad,");
