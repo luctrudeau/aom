@@ -73,15 +73,30 @@ void cfl_set_chroma(CFL_CONTEXT *const cfl, int blk_row, int blk_col,
 #endif
 }
 
+void cfl_average_blocks(tran_low_t *dst, const tran_low_t *src, int n) {
+  int x,y;
+  int row, rowNextBlock;
+  int temp;
+  for (y = 0; y < n; y++){
+    row = y * MAX_SB_SIZE;
+    rowNextBlock = (y + n) * MAX_SB_SIZE;
+    for (x = 0; x < n; x++){
+      temp = src[row+x] + src[row+x+n] + src[rowNextBlock+x] + src[rowNextBlock+x+n];
+      dst[y*n+x] = temp >> 2;
+    }
+  }
+}
+
 void cfl_load_predictor(const CFL_CONTEXT *const cfl,
 		tran_low_t *const ref_coeff, int tx_blk_size) {
     const tran_low_t *const luma_coeff = cfl->luma_coeff_ptr;
     const int luma_tx_blk_size = cfl->luma_tx_blk_size;
     int i, j, k = 0;
     if (tx_blk_size == luma_tx_blk_size) {
-      od_tf_up_hv_lp(ref_coeff, tx_blk_size, luma_coeff, MAX_SB_SIZE,
-		      tx_blk_size, tx_blk_size, tx_blk_size);
-      ref_coeff[0] >>= 1;
+    //  od_tf_up_hv_lp(ref_coeff, tx_blk_size, luma_coeff, MAX_SB_SIZE,
+//		      tx_blk_size, tx_blk_size, tx_blk_size);
+ //     ref_coeff[0] >>= 1;
+      cfl_average_blocks(ref_coeff, luma_coeff, tx_blk_size);
     } else {
       assert(tx_blk_size * 2 == luma_tx_blk_size);
       for (j = 0; j < tx_blk_size; j++) {
@@ -198,3 +213,4 @@ void od_tf_up_hv_lp(tran_low_t *dst, int dstride,
     }
   }
 }
+
