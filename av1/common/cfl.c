@@ -11,9 +11,15 @@
 
 #include "av1/common/cfl.h"
 
+#include <stdlib.h>
+
+
 #if CONFIG_CFL_TEST
 FILE *_cfl_log = NULL;
 FILE *_cfl_chroma_pred = NULL;
+
+int tot_ac_coded = 0;
+int tot_dc_coded = 0;
 
 void open_cfl_log(const char *filename) {
   _cfl_log = fopen(filename, "w");
@@ -30,7 +36,27 @@ void close_cfl_log() {
     fclose(_cfl_chroma_pred);
     _cfl_chroma_pred = NULL;
   }
+
+  if (tot_ac_coded > 0) {
+    printf("\n========================\nAC Coded: %d\n",
+		    tot_ac_coded);
+    printf("DC Coded: %d\n========================\n", tot_dc_coded);
+    tot_ac_coded = 0;
+    tot_dc_coded = 0;
+  }
 }
+
+void cfl_store_ac_dc_coded(int ac_dc_coded) {
+  if(ac_dc_coded == 0x02) {
+    tot_ac_coded++;
+  } else if (ac_dc_coded == 0x01) {
+    tot_dc_coded++;
+  } else if (ac_dc_coded == 0x11) {
+    tot_ac_coded++;
+    tot_dc_coded++;
+  }
+}
+
 #endif
 
 void cfl_set_luma(CFL_CONTEXT *const cfl, int blk_row, int blk_col,
@@ -51,7 +77,8 @@ void cfl_set_luma(CFL_CONTEXT *const cfl, int blk_row, int blk_col,
   if (blk_row == 0 && blk_col == 0) {
     fprintf(_cfl_log, "\n========================\n");
   }
-  fprintf(_cfl_log, "Y(id=%d),%d,%d,%d ", coeff_offset, tx_blk_size, blk_row, blk_col);
+  fprintf(_cfl_log, "Y(id=%d),%d,%d,%d ", coeff_offset, tx_blk_size, blk_row,
+		  blk_col);
 #endif
 }
 
@@ -72,7 +99,8 @@ void cfl_set_chroma(CFL_CONTEXT *const cfl, int blk_row, int blk_col,
   cfl->luma_coeff_ptr = &cfl->luma_coeff[coeff_offset];
 
 #if CONFIG_CFL_TEST
-  fprintf(_cfl_log, "c(y=%d, id=%d),%d,%d,%d\n", cfl->luma_tx_blk_size, coeff_offset, tx_blk_size, blk_row, blk_col);
+  fprintf(_cfl_log, "c(y=%d, id=%d),%d,%d,%d\n", cfl->luma_tx_blk_size,
+		  coeff_offset, tx_blk_size, blk_row, blk_col);
 #endif
 }
 
@@ -92,9 +120,8 @@ void cfl_load_predictor(const CFL_CONTEXT *const cfl,
 
     // CFL does not apply to DC (only AC)
     for (i = 1; i < tx_blk_size; i++) {
-      ref_coeff[j * tx_blk_size + i] =
-	      ref_coeff_high[j * tx_blk_size + i] >> 1;
-      assert(ref_coeff[j * tx_blk_size + i] < INT16_MAX);
+      ref_coeff[i] = ref_coeff_high[i] >> 1;
+      assert(ref_coeff[i] < INT16_MAX);
     }
     for (j = 1; j < tx_blk_size; j++) {
       for (i = 0; i < tx_blk_size; i++) {
@@ -112,9 +139,9 @@ void cfl_load_predictor(const CFL_CONTEXT *const cfl,
     // CFL does not apply to DC (only AC)
     for (i = 1; i < tx_blk_size; i++) {
       if ( tx_blk_size < 16 ) {
-        ref_coeff[k++] = luma_coeff[j * MAX_SB_SIZE + i] >> 1;
+        ref_coeff[k++] = luma_coeff[i] >> 1;
       } else {
-        ref_coeff[k++] = luma_coeff[j * MAX_SB_SIZE + i];
+        ref_coeff[k++] = luma_coeff[i];
       }
     }
     for (j = 1; j < tx_blk_size; j++) {
@@ -205,7 +232,7 @@ void cfl_store_predictor(CFL_CONTEXT *const cfl,
 /*Increase horizontal and vertical frequency resolution of an entire block and
    return the LF quarter.*/
 void od_tf_up_hv_lp(tran_high_t *const dst, int dstride,
- const tran_low_t *src, int sstride, int dx, int dy, int n) {
+ const tran_low_t *const src, int sstride, int dx, int dy, int n) {
   int x;
   int y;
   for (y = 0; y < n >> 1; y++) {

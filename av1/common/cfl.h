@@ -28,6 +28,8 @@ extern FILE *_cfl_chroma_pred;
 void open_cfl_log(const char* filename);
 
 void close_cfl_log();
+
+void cfl_store_ac_dc_coded(int ac_dc_coded);
 #endif
 
 // CFL: This will replace cfl_ctx
@@ -76,7 +78,7 @@ void cfl_store_predictor(CFL_CONTEXT *const cfl,
   while(0)
 
 
-void od_tf_up_hv_lp(tran_low_t *dst, int dstride, const tran_low_t *src,
+void od_tf_up_hv_lp(tran_high_t *dst, int dstride, const tran_low_t *src,
 		int sstride, int dx, int dy, int n);
 
 #ifdef __cplusplus

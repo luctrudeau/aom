@@ -651,6 +651,13 @@ void av1_xform_quant(const AV1_COMMON *cm, MACROBLOCK *x, int plane, int block,
      skip = 0;
     }
 #endif
+#if CONFIG_CFL_TEST
+    if (x->pvq_coded == 1 && plane != 0) {
+       cfl_store_ac_dc_coded(pvq_info->ac_dc_coded);
+    }
+#endif
+
+
   }
   x->pvq_skip[plane] = skip;
 
