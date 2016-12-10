@@ -527,8 +527,6 @@ static int av1_pvq_decode_helper2_cfl(MACROBLOCKD *const xd,
 
 #if CONFIG_CFL_TEST
   if (plane == 1) {
-    const int isVertical = mbmi->sb_type == BLOCK_4X8 || mbmi->sb_type == BLOCK_8X16 || mbmi->sb_type == BLOCK_16X32;
-
     for (j = 0; j < tx_blk_size; j++)
       for (i = 0; i < tx_blk_size; i++) dst[j * pd->dst.stride + i] = 0;
 
@@ -538,7 +536,8 @@ static int av1_pvq_decode_helper2_cfl(MACROBLOCKD *const xd,
     inv_txfm_param.eob = eob;
     inv_txfm_param.lossless = xd->lossless[xd->mi[0]->mbmi.segment_id];
     inv_txfm_add(pvq_ref_coeff, dst, pd->dst.stride, &inv_txfm_param);
-    fprintf(_cfl_chroma_pred, "%d, %d, %d, %d, %d, %d\n", tx_blk_size, isVertical, xd->mb_to_top_edge, xd->mb_to_left_edge, xd->mb_to_right_edge, xd->mb_to_bottom_edge);
+
+    fprintf(_cfl_chroma_pred, "%d, %d, %d\n", row, col, tx_blk_size);
 
     for (j = 0; j < tx_blk_size; j++) {
       for (i = 0; i < tx_blk_size; i++) {

@@ -78,33 +78,48 @@ void cfl_set_chroma(CFL_CONTEXT *const cfl, int blk_row, int blk_col,
 
 void cfl_load_predictor(const CFL_CONTEXT *const cfl,
 		tran_low_t *const ref_coeff, int tx_blk_size) {
-    const tran_low_t *const luma_coeff = cfl->luma_coeff_ptr;
-    const int luma_tx_blk_size = cfl->luma_tx_blk_size;
-    int i, j, k = 0;
+  const tran_low_t *const luma_coeff = cfl->luma_coeff_ptr;
+  const int luma_tx_blk_size = cfl->luma_tx_blk_size;
+  int i, j, k = 1;
 
-    if (tx_blk_size == luma_tx_blk_size) {
-      tran_high_t *ref_coeff_high = NULL;
-      ref_coeff_high = (tran_high_t*) calloc(tx_blk_size * tx_blk_size,
-		      sizeof(tran_high_t));
+  if (tx_blk_size == luma_tx_blk_size) {
+    tran_high_t *ref_coeff_high = NULL;
+    ref_coeff_high = (tran_high_t*) calloc(tx_blk_size * tx_blk_size,
+		    sizeof(tran_high_t));
 
-      od_tf_up_hv_lp(ref_coeff_high, tx_blk_size, luma_coeff, MAX_SB_SIZE,
-		      tx_blk_size, tx_blk_size, tx_blk_size);
+    od_tf_up_hv_lp(ref_coeff_high, tx_blk_size, luma_coeff, MAX_SB_SIZE,
+		    tx_blk_size, tx_blk_size, tx_blk_size);
 
-      for (j = 0; j < tx_blk_size; j++) {
-	for (i = 0; i < tx_blk_size; i++) {
-	  ref_coeff[j * tx_blk_size + i] = ref_coeff_high[j * tx_blk_size + i] >> 1;
-	  assert(ref_coeff[j * tx_blk_size + i] < INT16_MAX);
-	}
+    // CFL does not apply to DC (only AC)
+    for (i = 1; i < tx_blk_size; i++) {
+      ref_coeff[j * tx_blk_size + i] =
+	      ref_coeff_high[j * tx_blk_size + i] >> 1;
+      assert(ref_coeff[j * tx_blk_size + i] < INT16_MAX);
+    }
+    for (j = 1; j < tx_blk_size; j++) {
+      for (i = 0; i < tx_blk_size; i++) {
+        ref_coeff[j * tx_blk_size + i] =
+		ref_coeff_high[j * tx_blk_size + i] >> 1;
+	assert(ref_coeff[j * tx_blk_size + i] < INT16_MAX);
       }
+    }
 
-      if (ref_coeff_high != NULL) {
-	free(ref_coeff_high);
+    if (ref_coeff_high != NULL) {
+      free(ref_coeff_high);
+    }
+  } else {
+    assert(tx_blk_size * 2 == luma_tx_blk_size);
+    // CFL does not apply to DC (only AC)
+    for (i = 1; i < tx_blk_size; i++) {
+      if ( tx_blk_size < 16 ) {
+        ref_coeff[k++] = luma_coeff[j * MAX_SB_SIZE + i] >> 1;
+      } else {
+        ref_coeff[k++] = luma_coeff[j * MAX_SB_SIZE + i];
       }
-    } else {
-      assert(tx_blk_size * 2 == luma_tx_blk_size);
-      for (j = 0; j < tx_blk_size; j++) {
-        for (i = 0; i < tx_blk_size; i++) {
-	  if ( tx_blk_size < 16 ) {
+    }
+    for (j = 1; j < tx_blk_size; j++) {
+      for (i = 0; i < tx_blk_size; i++) {
+        if ( tx_blk_size < 16 ) {
             ref_coeff[k++] = luma_coeff[j * MAX_SB_SIZE + i] >> 1;
 	  } else {
             ref_coeff[k++] = luma_coeff[j * MAX_SB_SIZE + i];
