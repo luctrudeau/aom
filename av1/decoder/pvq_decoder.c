@@ -216,7 +216,12 @@ static void pvq_decode_partition(od_ec_dec *ec,
     od_val32 cgr;
     int icgr;
     int cfl_enabled;
+#if CONFIG_CFL
+    // Just for testing Gain computation
+    cfl_enabled = pli != 0;
+#else
     cfl_enabled = pli != 0 && is_keyframe && !OD_DISABLE_CFL;
+#endif
     cgr = od_pvq_compute_gain(ref16, n, q0, &gr, beta, rshift);
     if (cfl_enabled) cgr = OD_CGAIN_SCALE;
 #if defined(OD_FLOAT_PVQ)
