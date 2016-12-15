@@ -1215,6 +1215,7 @@ int av1_pvq_encode_helper(daala_enc_ctx *daala_enc, tran_low_t *const coeff,
   } else {
     out_int32[0] = OD_DIV_R0(in_int32[0] - ref_int32[0], pvq_dc_quant);
   }
+  int is_keyframe = 0;
 
   skip = od_pvq_encode(daala_enc, ref_int32, in_int32, out_int32,
                        (int)quant[0] >> quant_shift,  // scale/quantizer
@@ -1222,7 +1223,7 @@ int av1_pvq_encode_helper(daala_enc_ctx *daala_enc, tran_low_t *const coeff,
                        plane, tx_size,
                        OD_PVQ_BETA[use_activity_masking][plane][tx_size],
                        OD_ROBUST_STREAM,
-                       0,        // is_keyframe,
+                       is_keyframe,        // is_keyframe,
                        0, 0, 0,  // q_scaling, bx, by,
                        daala_enc->state.qm + off, daala_enc->state.qm_inv + off,
                        speed,  // speed

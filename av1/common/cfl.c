@@ -157,10 +157,10 @@ void cfl_load_predictor(const CFL_CONTEXT *const cfl,
 #if CONFIG_CFL_TEST
     fprintf(_cfl_log, "Load (luma size %d chroma size %d)\n",
 		    luma_tx_blk_size, tx_blk_size);
- /*   for (i = 0; i < tx_blk_size * tx_blk_size; i++){
+    for (i = 0; i < tx_blk_size * tx_blk_size; i++){
       fprintf(_cfl_log, "%d,", ref_coeff[i]);
     }
-    fprintf(_cfl_log, "\n");*/
+    fprintf(_cfl_log, "\n");
 #endif
 }
 
@@ -220,12 +220,12 @@ void cfl_store_predictor(CFL_CONTEXT *const cfl,
   }
 #if CONFIG_CFL_TEST
   fprintf(_cfl_log, "Store(ac_dc_coded %d)\n", ac_dc_coded);
- /* for (j = 0; j < tx_blk_size; j++) {
+  for (j = 0; j < tx_blk_size; j++) {
     for (i = 0; i < tx_blk_size; i++) {
       fprintf(_cfl_log, "%d,", luma_coeff[j * MAX_SB_SIZE + i]);
     }
   }
-  fprintf(_cfl_log, "\n");*/
+  fprintf(_cfl_log, "\n");
 #endif
 }
 

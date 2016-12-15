@@ -406,13 +406,21 @@ static int pvq_theta(od_coeff *out, const od_coeff *x0, const od_coeff *r0,
   s = 1;
   corr = corr/(1e-100 + g*(double)gr/OD_SHL(1, xshift + rshift));
   corr = OD_MAXF(OD_MINF(corr, 1.), -1.);
+#if CONFIG_CFL
+  if (pli != 0) skip_dist = gain_weight*cg*cg*OD_CGAIN_SCALE_2;
+#else
   if (is_keyframe) skip_dist = gain_weight*cg*cg*OD_CGAIN_SCALE_2;
+#endif
   else {
     skip_dist = gain_weight*(cg - cgr)*(cg - cgr)
      + cgr*(double)cg*(2 - 2*corr);
     skip_dist *= OD_CGAIN_SCALE_2;
   }
+#if CONFIG_CFL
+  if (pli == 0) {
+#else
   if (!is_keyframe) {
+#endif
     /* noref, gain=0 isn't allowed, but skip is allowed. */
     od_val32 scgr;
     scgr = OD_MAXF(0,gain_offset);
@@ -595,8 +603,8 @@ static int pvq_theta(od_coeff *out, const od_coeff *x0, const od_coeff *r0,
   else {
     if (!is_keyframe && qg == 0) {
       skip = (icgr ? OD_PVQ_SKIP_ZERO : OD_PVQ_SKIP_COPY);
+      if (qg == icgr && *itheta == 0 && !cfl_enabled) skip = OD_PVQ_SKIP_COPY;
     }
-    if (qg == icgr && *itheta == 0 && !cfl_enabled) skip = OD_PVQ_SKIP_COPY;
   }
   /* Synthesize like the decoder would. */
   if (skip) {
@@ -614,7 +622,11 @@ static int pvq_theta(od_coeff *out, const od_coeff *x0, const od_coeff *r0,
   /* Encode gain differently depending on whether we use prediction or not.
      Special encoding on inter frames where qg=0 is allowed for noref=0
      but not noref=1.*/
+#if CONFIG_CFL
+  if (pli != 0) return noref ? qg - 1 : neg_interleave(qg, icgr);
+#else
   if (is_keyframe) return noref ? qg : neg_interleave(qg, icgr);
+#endif
   else return noref ? qg - 1 : neg_interleave(qg + 1, icgr + 1);
 }
 
@@ -662,7 +674,11 @@ void pvq_encode_partition(od_ec_enc *ec,
   int id;
   noref = (theta == -1);
   id = (qg > 0) + 2*OD_MINI(theta + 1,3) + 8*code_skip*skip_rest;
+//#if CONFIG_CFL
+  //if (pli != 0) {
+//#else
   if (is_keyframe) {
+//#endif
     OD_ASSERT(id != 8);
     if (id >= 8) id--;
   }
@@ -919,7 +935,11 @@ int od_pvq_encode(daala_enc_ctx *enc,
 #endif
   cfl_encoded = 0;
   skip_rest = 1;
+#if CONFIG_CFL
+  skip_theta_value = pli != 0 ? -1 : 0;
+#else
   skip_theta_value = is_keyframe ? -1 : 0;
+#endif
   for (i = 1; i < nb_bands; i++) {
     if (theta[i] != skip_theta_value || qg[i]) skip_rest = 0;
   }
@@ -948,6 +968,9 @@ int od_pvq_encode(daala_enc_ctx *enc,
     int encode_flip;
     /* Encode CFL flip bit just after the first time it's used. */
     encode_flip = pli != 0 && is_keyframe && theta[i] != -1 && !cfl_encoded;
+#if CONFIG_CFL
+    encode_flip = 0;
+#endif
     if (i == 0 || (!skip_rest && !(skip_dir & (1 << ((i - 1)%3))))) {
       pvq_encode_partition(&enc->ec, qg[i], theta[i], max_theta[i], y + off[i],
        size[i], k[i], model, &enc->state.adapt, exg + i, ext + i,
@@ -1025,7 +1048,11 @@ int od_pvq_encode(daala_enc_ctx *enc,
        by >> (OD_TXSIZES - 1), skip);
     }
 #endif
+#if CONFIG_CFL
+    if (pli != 0) for (i = 1; i < 1 << (2*bs + 4); i++) out[i] = 0;
+#else
     if (is_keyframe) for (i = 1; i < 1 << (2*bs + 4); i++) out[i] = 0;
+#endif
     else for (i = 1; i < 1 << (2*bs + 4); i++) out[i] = ref[i];
     if (out[0] == 0) return 1;
   }

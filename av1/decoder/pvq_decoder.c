@@ -155,7 +155,11 @@ static void pvq_decode_partition(od_ec_dec *ec,
   /* Skip is per-direction. For band=0, we can use any of the flags. */
   if (skip_rest[(band + 2) % 3]) {
     qg = 0;
+#if CONFIG_CFL
+    if (pli != 0) {
+#else
     if (is_keyframe) {
+#endif
       itheta = -1;
       *noref = 1;
     }
@@ -171,8 +175,13 @@ static void pvq_decode_partition(od_ec_dec *ec,
     id = od_decode_cdf_adapt(ec, &adapt->pvq.pvq_gaintheta_cdf[cdf_ctx][0],
      8 + 7*has_skip, adapt->pvq.pvq_gaintheta_increment,
      "pvq:gaintheta");
+//#if CONFIG_CFL
+//    if (pli == 0 && id >= 10) id++;
+//    if (pli != 0 && id >= 8) id++;
+//#else
     if (!is_keyframe && id >= 10) id++;
     if (is_keyframe && id >= 8) id++;
+//#endif
     if (id >= 8) {
       id -= 8;
       skip_rest[0] = skip_rest[1] = skip_rest[2] = 1;
@@ -217,7 +226,6 @@ static void pvq_decode_partition(od_ec_dec *ec,
     int icgr;
     int cfl_enabled;
 #if CONFIG_CFL
-    // Just for testing Gain computation
     cfl_enabled = pli != 0;
 #else
     cfl_enabled = pli != 0 && is_keyframe && !OD_DISABLE_CFL;
@@ -231,7 +239,11 @@ static void pvq_decode_partition(od_ec_dec *ec,
 #endif
     /* quantized gain is interleave encoded when there's a reference;
        deinterleave it now */
+#if CONFIG_CFL
+    if (pli != 0) qg = neg_deinterleave(qg, icgr);
+#else
     if (is_keyframe) qg = neg_deinterleave(qg, icgr);
+#endif
     else {
       qg = neg_deinterleave(qg, icgr + 1) - 1;
       if (qg == 0) *skip = (icgr ? OD_PVQ_SKIP_ZERO : OD_PVQ_SKIP_COPY);
@@ -252,7 +264,11 @@ static void pvq_decode_partition(od_ec_dec *ec,
   }
   else{
     itheta = 0;
+#if CONFIG_CFL
+    if (pli == 0) qg++;
+#else
     if (!is_keyframe) qg++;
+#endif
     qcg = OD_SHL(qg, OD_CGAIN_SHIFT);
     if (qg == 0) *skip = OD_PVQ_SKIP_ZERO;
   }
@@ -343,7 +359,11 @@ void od_pvq_decode(daala_dec_ctx *dec,
   OD_ASSERT(block_skip < 4);
   out[0] = block_skip & 1;
   if (!(block_skip >> 1)) {
+#if CONFIG_CFL
+    if (pli != 0) for (i = 1; i < 1 << (2*bs + 4); i++) out[i] = 0;
+#else
     if (is_keyframe) for (i = 1; i < 1 << (2*bs + 4); i++) out[i] = 0;
+#endif
     else for (i = 1; i < 1 << (2*bs + 4); i++) out[i] = ref[i];
   }
   else {
