@@ -50,7 +50,11 @@ void pvq_encode_partition(od_ec_enc *ec,
                                  int code_skip,
                                  int skip_rest,
                                  int encode_flip,
-                                 int flip);
+                                 int flip
+#if CONFIG_CFL
+				 ,int pli
+#endif
+                                 );
 
 int od_pvq_encode(daala_enc_ctx *enc, od_coeff *ref, const od_coeff *in,
  od_coeff *out, int q_dc, int q_ac, int pli, int bs, const od_val16 *beta, int robust,

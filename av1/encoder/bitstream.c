@@ -2136,7 +2136,11 @@ static void write_modes_b(AV1_COMP *cpi, const TileInfo *const tile,
                     (plane != 0) * OD_TXSIZES * PVQ_MAX_PARTITIONS +
                         pvq->bs * PVQ_MAX_PARTITIONS + i,
                     is_keyframe, i == 0 && (i < pvq->nb_bands - 1),
-                    pvq->skip_rest, encode_flip, flip);
+                    pvq->skip_rest, encode_flip, flip
+#if CONFIG_CFL
+		    ,plane
+#endif
+		    );
               }
               if (i == 0 && !pvq->skip_rest && pvq->bs > 0) {
                 od_encode_cdf_adapt(

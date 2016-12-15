@@ -175,13 +175,13 @@ static void pvq_decode_partition(od_ec_dec *ec,
     id = od_decode_cdf_adapt(ec, &adapt->pvq.pvq_gaintheta_cdf[cdf_ctx][0],
      8 + 7*has_skip, adapt->pvq.pvq_gaintheta_increment,
      "pvq:gaintheta");
-//#if CONFIG_CFL
-//    if (pli == 0 && id >= 10) id++;
-//    if (pli != 0 && id >= 8) id++;
-//#else
+#if CONFIG_CFL
+    if (pli == 0 && id >= 10) id++;
+    if (pli != 0 && id >= 8) id++;
+#else
     if (!is_keyframe && id >= 10) id++;
     if (is_keyframe && id >= 8) id++;
-//#endif
+#endif
     if (id >= 8) {
       id -= 8;
       skip_rest[0] = skip_rest[1] = skip_rest[2] = 1;
@@ -370,7 +370,11 @@ void od_pvq_decode(daala_dec_ctx *dec,
     for (i = 0; i < nb_bands; i++) size[i] = off[i+1] - off[i];
     cfl.ref = ref;
     cfl.nb_coeffs = off[nb_bands];
+#if CONFIG_CFL
+    cfl.allow_flip = 0;
+#else
     cfl.allow_flip = pli != 0 && is_keyframe;
+#endif
     for (i = 0; i < nb_bands; i++) {
       int q;
 

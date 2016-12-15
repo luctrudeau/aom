@@ -601,7 +601,11 @@ static int pvq_theta(od_coeff *out, const od_coeff *x0, const od_coeff *r0,
     if (qg == 0) skip = OD_PVQ_SKIP_ZERO;
   }
   else {
+#if CONFIG_CFL
+    if (pli == 0 && qg == 0) {
+#else
     if (!is_keyframe && qg == 0) {
+#endif
       skip = (icgr ? OD_PVQ_SKIP_ZERO : OD_PVQ_SKIP_COPY);
       if (qg == icgr && *itheta == 0 && !cfl_enabled) skip = OD_PVQ_SKIP_COPY;
     }
@@ -623,7 +627,7 @@ static int pvq_theta(od_coeff *out, const od_coeff *x0, const od_coeff *r0,
      Special encoding on inter frames where qg=0 is allowed for noref=0
      but not noref=1.*/
 #if CONFIG_CFL
-  if (pli != 0) return noref ? qg - 1 : neg_interleave(qg, icgr);
+  if (pli != 0) return noref ? qg : neg_interleave(qg, icgr);
 #else
   if (is_keyframe) return noref ? qg : neg_interleave(qg, icgr);
 #endif
@@ -669,16 +673,20 @@ void pvq_encode_partition(od_ec_enc *ec,
                                  int code_skip,
                                  int skip_rest,
                                  int encode_flip,
-                                 int flip) {
+                                 int flip
+#if CONFIG_CFL
+				 , int pli
+#endif
+				 ) {
   int noref;
   int id;
   noref = (theta == -1);
   id = (qg > 0) + 2*OD_MINI(theta + 1,3) + 8*code_skip*skip_rest;
-//#if CONFIG_CFL
-  //if (pli != 0) {
-//#else
+#if CONFIG_CFL
+  if (pli != 0) {
+#else
   if (is_keyframe) {
-//#endif
+#endif
     OD_ASSERT(id != 8);
     if (id >= 8) id--;
   }
@@ -854,7 +862,11 @@ int od_pvq_encode(daala_enc_ctx *enc,
   skip_diff = 0;
   flip = 0;
   /*If we are coding a chroma block of a keyframe, we are doing CfL.*/
+#if CONFIG_CFL
+  if (0) { //if (pli != 0) {
+#else
   if (pli != 0 && is_keyframe) {
+#endif
     od_val32 xy;
     xy = 0;
     /*Compute the dot-product of the first band of chroma with the luma ref.*/
@@ -967,16 +979,21 @@ int od_pvq_encode(daala_enc_ctx *enc,
   for (i = 0; i < nb_bands; i++) {
     int encode_flip;
     /* Encode CFL flip bit just after the first time it's used. */
-    encode_flip = pli != 0 && is_keyframe && theta[i] != -1 && !cfl_encoded;
 #if CONFIG_CFL
     encode_flip = 0;
+#else
+    encode_flip = pli != 0 && is_keyframe && theta[i] != -1 && !cfl_encoded;
 #endif
     if (i == 0 || (!skip_rest && !(skip_dir & (1 << ((i - 1)%3))))) {
       pvq_encode_partition(&enc->ec, qg[i], theta[i], max_theta[i], y + off[i],
        size[i], k[i], model, &enc->state.adapt, exg + i, ext + i,
        robust || is_keyframe, (pli != 0)*OD_TXSIZES*PVQ_MAX_PARTITIONS
        + bs*PVQ_MAX_PARTITIONS + i, is_keyframe, i == 0 && (i < nb_bands - 1),
-       skip_rest, encode_flip, flip);
+       skip_rest, encode_flip, flip
+#if CONFIG_CFL
+       ,pli
+#endif
+       );
     }
     if (i == 0 && !skip_rest && bs > 0) {
       od_encode_cdf_adapt(&enc->ec, skip_dir,
