@@ -653,8 +653,6 @@ static int pvq_theta(od_coeff *out, const od_coeff *x0, const od_coeff *r0,
  * @param [in]     is_keyframe whether we're encoding a keyframe
  * @param [in]     code_skip  whether the "skip rest" flag is allowed
  * @param [in]     skip_rest  when set, we skip all higher bands
- * @param [in]     encode_flip whether we need to encode the CfL flip flag now
- * @param [in]     flip       value of the CfL flip flag
  */
 void pvq_encode_partition(od_ec_enc *ec,
                                  int qg,
@@ -671,9 +669,7 @@ void pvq_encode_partition(od_ec_enc *ec,
                                  int cdf_ctx,
                                  int is_keyframe,
                                  int code_skip,
-                                 int skip_rest,
-                                 int encode_flip,
-                                 int flip
+                                 int skip_rest
 #if CONFIG_CFL
 				 , int pli
 #endif
@@ -698,13 +694,6 @@ void pvq_encode_partition(od_ec_enc *ec,
      larger gain and theta values. For noref, theta = -1. */
   od_encode_cdf_adapt(ec, id, &adapt->pvq.pvq_gaintheta_cdf[cdf_ctx][0],
    8 + 7*code_skip, adapt->pvq.pvq_gaintheta_increment);
-  if (encode_flip) {
-    /* We could eventually do some smarter entropy coding here, but it would
-       have to be good enough to overcome the overhead of the entropy coder.
-       An early attempt using a "toogle" flag with simple adaptation wasn't
-       worth the trouble. */
-    od_ec_enc_bits(ec, flip, 1);
-  }
   if (qg > 0) {
     int tmp;
     tmp = *exg;
@@ -824,8 +813,6 @@ int od_pvq_encode(daala_enc_ctx *enc,
   uint16_t *skip_cdf;
   od_rollback_buffer buf;
   int dc_quant;
-  int flip;
-  int cfl_encoded;
   int skip_rest;
   int skip_dir;
   int skip_theta_value;
@@ -860,35 +847,7 @@ int od_pvq_encode(daala_enc_ctx *enc,
   tell = 0;
   for (i = 0; i < nb_bands; i++) size[i] = off[i+1] - off[i];
   skip_diff = 0;
-  flip = 0;
   /*If we are coding a chroma block of a keyframe, we are doing CfL.*/
-#if CONFIG_CFL
-  if (0) { //if (pli != 0) {
-#else
-  if (pli != 0 && is_keyframe) {
-#endif
-    od_val32 xy;
-    xy = 0;
-    /*Compute the dot-product of the first band of chroma with the luma ref.*/
-    for (i = off[0]; i < off[1]; i++) {
-#if defined(OD_FLOAT_PVQ)
-      xy += ref[i]*(double)qm[i]*OD_QM_SCALE_1*
-       (double)in[i]*(double)qm[i]*OD_QM_SCALE_1;
-#else
-      od_val32 rq;
-      od_val32 inq;
-      rq = ref[i]*qm[i];
-      inq = in[i]*qm[i];
-      xy += OD_SHR(rq*(int64_t)inq, OD_SHL(OD_QM_SHIFT + OD_CFL_FLIP_SHIFT,
-       1));
-#endif
-    }
-    /*If cos(theta) < 0, then |theta| > pi/2 and we should negate the ref.*/
-    if (xy < 0) {
-      flip = 1;
-      for(i = off[0]; i < off[nb_bands]; i++) ref[i] = -ref[i];
-    }
-  }
   for (i = 0; i < nb_bands; i++) {
     int q;
 
@@ -945,7 +904,6 @@ int od_pvq_encode(daala_enc_ctx *enc,
      by >> (OD_TXSIZES - 1), 0);
   }
 #endif
-  cfl_encoded = 0;
   skip_rest = 1;
 #if CONFIG_CFL
   skip_theta_value = pli != 0 ? -1 : 0;
@@ -977,19 +935,12 @@ int od_pvq_encode(daala_enc_ctx *enc,
       skip_rest, skip_dir, bs);
 
   for (i = 0; i < nb_bands; i++) {
-    int encode_flip;
-    /* Encode CFL flip bit just after the first time it's used. */
-#if CONFIG_CFL
-    encode_flip = 0;
-#else
-    encode_flip = pli != 0 && is_keyframe && theta[i] != -1 && !cfl_encoded;
-#endif
     if (i == 0 || (!skip_rest && !(skip_dir & (1 << ((i - 1)%3))))) {
       pvq_encode_partition(&enc->ec, qg[i], theta[i], max_theta[i], y + off[i],
        size[i], k[i], model, &enc->state.adapt, exg + i, ext + i,
        robust || is_keyframe, (pli != 0)*OD_TXSIZES*PVQ_MAX_PARTITIONS
        + bs*PVQ_MAX_PARTITIONS + i, is_keyframe, i == 0 && (i < nb_bands - 1),
-       skip_rest, encode_flip, flip
+       skip_rest
 #if CONFIG_CFL
        ,pli
 #endif
@@ -1000,7 +951,6 @@ int od_pvq_encode(daala_enc_ctx *enc,
        &enc->state.adapt.pvq.pvq_skip_dir_cdf[(pli != 0) + 2*(bs - 1)][0], 7,
        enc->state.adapt.pvq.pvq_skip_dir_increment);
     }
-    if (encode_flip) cfl_encoded = 1;
   }
   tell = od_ec_enc_tell_frac(&enc->ec) - tell;
   /* Account for the rate of skipping the AC, based on the same DC decision

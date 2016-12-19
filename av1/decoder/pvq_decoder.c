@@ -79,12 +79,6 @@ static void pvq_synthesis(od_coeff *xcoeff, od_coeff *ypulse, od_val16 *r16,
    qm_inv);
 }
 
-typedef struct {
-  od_coeff *ref;
-  int nb_coeffs;
-  int allow_flip;
-} cfl_ctx;
-
 /** Decodes a single vector of integers (eg, a partition within a
  *  coefficient block) encoded using PVQ
  *
@@ -125,7 +119,6 @@ static void pvq_decode_partition(od_ec_dec *ec,
                                  int is_keyframe,
                                  int pli,
                                  int cdf_ctx,
-                                 cfl_ctx *cfl,
                                  int has_skip,
                                  int *skip_rest,
                                  int band,
@@ -189,15 +182,6 @@ static void pvq_decode_partition(od_ec_dec *ec,
     qg = id & 1;
     itheta = (id >> 1) - 1;
     *noref = (itheta == -1);
-  }
-  /* The CfL flip bit is only decoded on the first band that has noref=0. */
-  if (cfl->allow_flip && !*noref) {
-    int flip;
-    flip = od_ec_dec_bits(ec, 1, "cfl:flip");
-    if (flip) {
-      for (i = 0; i < cfl->nb_coeffs; i++) cfl->ref[i] = -cfl->ref[i];
-    }
-    cfl->allow_flip = 0;
   }
   if (qg > 0) {
     int tmp;
@@ -334,7 +318,6 @@ void od_pvq_decode(daala_dec_ctx *dec,
   int size[PVQ_MAX_PARTITIONS];
   generic_encoder *model;
   int skip_rest[3] = {0};
-  cfl_ctx cfl;
   const unsigned char *pvq_qm;
   int use_masking;
 
@@ -368,13 +351,6 @@ void od_pvq_decode(daala_dec_ctx *dec,
   }
   else {
     for (i = 0; i < nb_bands; i++) size[i] = off[i+1] - off[i];
-    cfl.ref = ref;
-    cfl.nb_coeffs = off[nb_bands];
-#if CONFIG_CFL
-    cfl.allow_flip = 0;
-#else
-    cfl.allow_flip = pli != 0 && is_keyframe;
-#endif
     for (i = 0; i < nb_bands; i++) {
       int q;
 
@@ -387,7 +363,7 @@ void od_pvq_decode(daala_dec_ctx *dec,
        model, &dec->state.adapt, exg + i, ext + i, ref + off[i], out + off[i],
        &noref[i], beta[i], robust, is_keyframe, pli,
        (pli != 0)*OD_TXSIZES*PVQ_MAX_PARTITIONS + bs*PVQ_MAX_PARTITIONS + i,
-       &cfl, i == 0 && (i < nb_bands - 1), skip_rest, i, &skip[i],
+       i == 0 && (i < nb_bands - 1), skip_rest, i, &skip[i],
        qm + off[i], qm_inv + off[i]);
       if (i == 0 && !skip_rest[0] && bs > 0) {
         int skip_dir;

@@ -51,7 +51,7 @@ void cfl_set_chroma(CFL_CONTEXT *const cfl, int blk_row, int blk_col,
 		int tx_blk_size);
 
 void cfl_load_predictor(const CFL_CONTEXT *const cfl,
-		tran_low_t *const ref_coeff, int tx_blk_size);
+		tran_low_t *const ref_coeff, int tx_blk_size, int flip);
 
 void cfl_store_predictor(CFL_CONTEXT *const cfl,
 		const tran_low_t *const ref_coeff,

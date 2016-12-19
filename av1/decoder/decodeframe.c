@@ -470,6 +470,12 @@ static int av1_pvq_decode_helper2_cfl(MACROBLOCKD *const xd,
   int ac_dc_coded;  // bit0: DC coded, bit1 : AC coded
   uint8_t *dst;
   int eob;
+  int16_t *quant;
+  // ToDo(yaowu): correct this with optimal number from decoding process.
+  const int max_scan_line = tx_size_2d[tx_size];
+  int flip;
+  int xdec = pd->subsampling_x;
+  int seg_id = mbmi->segment_id;
 
   // Force DCT_DCT transform (for now)
   tx_type = DCT_DCT;
@@ -481,7 +487,15 @@ static int av1_pvq_decode_helper2_cfl(MACROBLOCKD *const xd,
   }
 
   eob = 0;
+  flip = 0;
   dst = &pd->dst.buf[4 * row * pd->dst.stride + 4 * col];
+  quant = &pd->seg_dequant[seg_id][0];  // aom's quantizer
+
+  // decode flip flag. 1 bit: 1 implies to invert the sign of the
+  // CfL prediction.
+  if (plane != 0) {
+    flip = od_ec_dec_bits(xd->daala_dec.ec, 1, "cfl:flip");
+  }
 
   // decode ac/dc coded flag. bit0: DC coded, bit1 : AC coded
   // NOTE : we don't use 5 symbols for luma here in aom codebase,
@@ -492,12 +506,7 @@ static int av1_pvq_decode_helper2_cfl(MACROBLOCKD *const xd,
       xd->daala_dec.state.adapt.skip_cdf[2 * tx_size + (plane != 0)], 4,
       xd->daala_dec.state.adapt.skip_increment, "skip");
 
-  int xdec = pd->subsampling_x;
-  int seg_id = mbmi->segment_id;
-  int16_t *quant;
   FWD_TXFM_PARAM fwd_txfm_param;
-  // ToDo(yaowu): correct this with optimal number from decoding process.
-  const int max_scan_line = tx_size_2d[tx_size];
 
   for (j = 0; j < tx_blk_size; j++) {
     for (i = 0; i < tx_blk_size; i++) {
@@ -505,6 +514,9 @@ static int av1_pvq_decode_helper2_cfl(MACROBLOCKD *const xd,
     }
   }
 
+  // For now we transform the intra chroma prediction to get the DC.
+  // This requires way too much computation. A faster way is needed.
+  // Maybe DC_PRED could be tweaked, or some other form of DC prediction.
   fwd_txfm_param.tx_type = tx_type;
   fwd_txfm_param.tx_size = tx_size;
   fwd_txfm_param.fwd_txfm_opt = FWD_TXFM_OPT_NORMAL;
@@ -513,10 +525,9 @@ static int av1_pvq_decode_helper2_cfl(MACROBLOCKD *const xd,
 
   fwd_txfm(pred, pvq_ref_coeff, diff_stride, &fwd_txfm_param);
 
-  quant = &pd->seg_dequant[seg_id][0];  // aom's quantizer
   if (plane != 0) {
     // Replace Chroma prediction with dequantized transform Luma coefficients
-    cfl_load_predictor(cfl, pvq_ref_coeff, tx_blk_size);
+    cfl_load_predictor(cfl, pvq_ref_coeff, tx_blk_size, flip);
   }
 
   eob = av1_pvq_decode_helper(&xd->daala_dec, pvq_ref_coeff, dqcoeff, quant,

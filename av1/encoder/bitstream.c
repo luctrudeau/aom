@@ -2107,8 +2107,6 @@ static void write_modes_b(AV1_COMP *cpi, const TileInfo *const tile,
       for (idy = 0; idy < max_blocks_high; idy += step) {
         for (idx = 0; idx < max_blocks_wide; idx += step) {
           const int is_keyframe = 0;
-          const int encode_flip = 0;
-          const int flip = 0;
           const int robust = 1;
           int i;
           const int has_dc_skip = 1;
@@ -2117,6 +2115,16 @@ static void write_modes_b(AV1_COMP *cpi, const TileInfo *const tile,
           generic_encoder *model = adapt->pvq.pvq_param_model;
 
           pvq = get_pvq_block(cpi->td.mb.pvq_q);
+
+#if CONFIG_CFL
+	  if (plane != 0) {
+	    /* We could eventually do some smarter entropy coding here, but it
+	     * would have to be good enough to overcome the overhead of the
+	     * entropy coder. An early attempt using a "toogle" flag with simple
+	     * adaptation wasn't worth the trouble. */
+            od_ec_enc_bits(&w->ec, pvq->flip, 1);
+          }
+#endif
 
           // encode block skip info
           od_encode_cdf_adapt(&w->ec, pvq->ac_dc_coded,
@@ -2136,7 +2144,7 @@ static void write_modes_b(AV1_COMP *cpi, const TileInfo *const tile,
                     (plane != 0) * OD_TXSIZES * PVQ_MAX_PARTITIONS +
                         pvq->bs * PVQ_MAX_PARTITIONS + i,
                     is_keyframe, i == 0 && (i < pvq->nb_bands - 1),
-                    pvq->skip_rest, encode_flip, flip
+                    pvq->skip_rest
 #if CONFIG_CFL
 		    ,plane
 #endif

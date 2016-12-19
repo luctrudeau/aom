@@ -83,6 +83,9 @@ typedef struct PVQ_INFO {
   int ac_dc_coded;  // block skip info, indicating whether DC/AC is coded.
                     // bit0: DC coded, bit1 : AC coded (1 means coded)
   tran_low_t dq_dc_residue;
+#if CONFIG_CFL
+  int flip;
+#endif
 } PVQ_INFO;
 
 typedef struct PVQ_QUEUE {

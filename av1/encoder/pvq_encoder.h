@@ -48,9 +48,7 @@ void pvq_encode_partition(od_ec_enc *ec,
                                  int cdf_ctx,
                                  int is_keyframe,
                                  int code_skip,
-                                 int skip_rest,
-                                 int encode_flip,
-                                 int flip
+                                 int skip_rest
 #if CONFIG_CFL
 				 ,int pli
 #endif
