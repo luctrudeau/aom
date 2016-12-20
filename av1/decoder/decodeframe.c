@@ -527,7 +527,13 @@ static int av1_pvq_decode_helper2_cfl(MACROBLOCKD *const xd,
 
   if (plane != 0) {
     // Replace Chroma prediction with dequantized transform Luma coefficients
-    cfl_load_predictor(cfl, pvq_ref_coeff, tx_blk_size, flip);
+    cfl_load_predictor(cfl, pvq_ref_coeff, tx_blk_size);
+
+    if (flip) {
+      for (i = 1; i < tx_blk_size * tx_blk_size; i++) {
+        pvq_ref_coeff[i] = -pvq_ref_coeff[i];
+      }
+    }
   }
 
   eob = av1_pvq_decode_helper(&xd->daala_dec, pvq_ref_coeff, dqcoeff, quant,

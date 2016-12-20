@@ -621,13 +621,15 @@ void av1_xform_quant(const AV1_COMMON *cm, MACROBLOCK *x, int plane, int block,
   // PVQ for inter mode block
   if (!x->skip_block) {
 #if CONFIG_CFL
-    // CfL is not performed during mode selection only at the end
-    // Also, an intra check is needed. Signaling CfL would simplify
-    // this.
 
     // Replace transformed prediction with Luma dequantized transformed
     // coeffs.
     if (x->pvq_coded == 1 && plane != 0) {
+      // CfL is not performed during mode selection only at the end
+      // Also, an intra check is needed. Signaling CfL would simplify
+      // this.
+      cfl_load_predictor(cfl, ref_coeff, tx_blk_size);
+
       od_val32 xy;
       xy = 0;
       /*Compute the dot-product of the first band of chroma with the luma ref.*/
@@ -636,14 +638,18 @@ void av1_xform_quant(const AV1_COMMON *cm, MACROBLOCK *x, int plane, int block,
         //od_val32 inq;
         //rq = ref[i]*qm[i];
         //inq = in[i]*qm[i];
-        xy += OD_SHR(coeff[i]*(int64_t)ref_coeff[i], OD_SHL(OD_QM_SHIFT + OD_CFL_FLIP_SHIFT,
-         1));
+        xy += OD_SHR(coeff[i]*(int64_t)ref_coeff[i],
+			OD_SHL(OD_QM_SHIFT + OD_CFL_FLIP_SHIFT, 1));
       }
       /*If cos(theta) < 0, then |theta| > pi/2 and we should negate the ref.*/
       if (xy < 0) {
         pvq_info->flip = 1;
+        for (i = 1; i < tx_blk_size * tx_blk_size; i++) {
+          ref_coeff[i] = -ref_coeff[i];
+        }
+      } else {
+        pvq_info->flip = 0;
       }
-      cfl_load_predictor(cfl, ref_coeff, tx_blk_size, pvq_info->flip);
     }
 #endif
     skip = av1_pvq_encode_helper(&x->daala_enc,

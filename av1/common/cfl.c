@@ -105,7 +105,7 @@ void cfl_set_chroma(CFL_CONTEXT *const cfl, int blk_row, int blk_col,
 }
 
 void cfl_load_predictor(const CFL_CONTEXT *const cfl,
-		tran_low_t *const ref_coeff, int tx_blk_size, int flip) {
+		tran_low_t *const ref_coeff, int tx_blk_size) {
   const tran_low_t *const luma_coeff = cfl->luma_coeff_ptr;
   const int luma_tx_blk_size = cfl->luma_tx_blk_size;
   int i, j, k = 1;
@@ -155,11 +155,6 @@ void cfl_load_predictor(const CFL_CONTEXT *const cfl,
     }
   }
 
-  if (flip) {
-    for (i = 1; i < tx_blk_size * tx_blk_size; i++) {
-      ref_coeff[i] = -ref_coeff[i];
-    }
-  }
 #if CONFIG_CFL_TEST
     fprintf(_cfl_log, "Load (luma size %d chroma size %d)\n",
 		    luma_tx_blk_size, tx_blk_size);
