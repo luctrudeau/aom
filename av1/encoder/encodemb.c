@@ -571,6 +571,8 @@ void av1_xform_quant(const AV1_COMMON *cm, MACROBLOCK *x, int plane, int block,
 
 #if CONFIG_CFL
   tx_type = DCT_DCT;
+  // FIXME Put this somewhere sane
+  tran_low_t cfl_coeff[1024];
   CFL_CONTEXT *const cfl = xd->cfl;
   if (x->pvq_coded == 1) {
     if (plane == 0) {
@@ -625,31 +627,52 @@ void av1_xform_quant(const AV1_COMMON *cm, MACROBLOCK *x, int plane, int block,
     // Replace transformed prediction with Luma dequantized transformed
     // coeffs.
     if (x->pvq_coded == 1 && plane != 0) {
+      int intra_sum = 0;
+      int cfl_sum = 0;
+
       // CfL is not performed during mode selection only at the end
       // Also, an intra check is needed. Signaling CfL would simplify
       // this.
-      cfl_load_predictor(cfl, ref_coeff, tx_blk_size);
+      cfl_load_predictor(cfl, cfl_coeff, tx_blk_size);
 
-      od_val32 xy;
-      xy = 0;
+      // Don't consider DC in sum
+      for (i = 1; i < tx_blk_size * tx_blk_size; i++) {
+        intra_sum += abs(coeff[i] - ref_coeff[i]);
+	cfl_sum += abs(coeff[i] - cfl_coeff[i]);
+      }
+
+      // This is too slow, but it's to avoid causing side effects.
+      if (cfl_sum <= intra_sum) {
+        for (i = 1; i < tx_blk_size * tx_blk_size; i++) {
+          ref_coeff[i] = cfl_coeff[i];
+	}
+	pvq_info->flip = 1;
+      } else {
+        pvq_info->flip = 0;
+      }
+
+      // Flipping causes regression disabling it for now. Considering a per band
+      // approach
+      //od_val32 xy;
+      //xy = 0;
       /*Compute the dot-product of the first band of chroma with the luma ref.*/
-      for (i = 0; i < tx_blk_size * tx_blk_size; i++) {
+      //for (i = 0; i < tx_blk_size * tx_blk_size; i++) {
         //od_val32 rq;
         //od_val32 inq;
         //rq = ref[i]*qm[i];
         //inq = in[i]*qm[i];
-        xy += OD_SHR(coeff[i]*(int64_t)ref_coeff[i],
-			OD_SHL(OD_QM_SHIFT + OD_CFL_FLIP_SHIFT, 1));
-      }
+        //xy += OD_SHR(coeff[i]*(int64_t)ref_coeff[i],
+	//		OD_SHL(OD_QM_SHIFT + OD_CFL_FLIP_SHIFT, 1));
+      //}
       /*If cos(theta) < 0, then |theta| > pi/2 and we should negate the ref.*/
-      if (xy < 0) {
-        pvq_info->flip = 1;
-        for (i = 1; i < tx_blk_size * tx_blk_size; i++) {
-          ref_coeff[i] = -ref_coeff[i];
-        }
-      } else {
-        pvq_info->flip = 0;
-      }
+      //if (xy < 0) {
+        //pvq_info->flip = 1;
+        //for (i = 1; i < tx_blk_size * tx_blk_size; i++) {
+          //ref_coeff[i] = -ref_coeff[i];
+        //}
+      //} else {
+      //  pvq_info->flip = 0;
+      //}
     }
 #endif
     skip = av1_pvq_encode_helper(&x->daala_enc,
