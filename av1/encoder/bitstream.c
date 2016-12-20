@@ -2122,7 +2122,14 @@ static void write_modes_b(AV1_COMP *cpi, const TileInfo *const tile,
           od_encode_cdf_adapt(&w->ec, pvq->ac_dc_coded,
                               adapt->skip_cdf[2 * tx_size + (plane != 0)], 4,
                               adapt->skip_increment);
-
+#if CONFIG_CFL
+          // decode enable cfl flag. Only present for chroma planes, this flag
+	  // specifies whether to use CfL (enable_cfl == 1) or to use the intra
+	  // chroma prediction(enable_cfl == 0)
+	  if (plane != 0) {
+	    od_ec_enc_bits(&w->ec, 1, 1);
+	  }
+#endif
           // AC coeffs coded?
           if (pvq->ac_dc_coded & 0x02) {
             assert(pvq->bs <= tx_size);

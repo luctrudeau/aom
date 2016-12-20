@@ -403,6 +403,9 @@ static int av1_pvq_decode_helper2(MACROBLOCKD *const xd,
   int ac_dc_coded;  // bit0: DC coded, bit1 : AC coded
   uint8_t *dst;
   int eob;
+#if CONFIG_CFL
+  int enable_cfl;
+#endif
 
   eob = 0;
   dst = &pd->dst.buf[4 * row * pd->dst.stride + 4 * col];
@@ -415,7 +418,16 @@ static int av1_pvq_decode_helper2(MACROBLOCKD *const xd,
       xd->daala_dec.ec,
       xd->daala_dec.state.adapt.skip_cdf[2 * tx_size + (plane != 0)], 4,
       xd->daala_dec.state.adapt.skip_increment, "skip");
-
+#if CONFIG_CFL
+  // decode enable cfl flag. Only present for chroma planes, this flag
+  // specifies whether to use CfL (enable_cfl == 1) or to use the intra chroma
+  // prediction(enable_cfl == 0)
+  if (plane != 0) {
+    enable_cfl = od_ec_dec_bits(xd->daala_dec.ec, 1, "cfl:enable_cfl");
+  } else {
+    enable_cfl = 0;
+  }
+#endif
   if (ac_dc_coded) {
     int xdec = pd->subsampling_x;
     int seg_id = mbmi->segment_id;
