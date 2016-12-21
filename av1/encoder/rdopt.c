@@ -2183,8 +2183,11 @@ static int64_t rd_pick_intra4x4block(
 #if CONFIG_PVQ
   od_encode_checkpoint(&x->daala_enc, &pre_buf);
 #endif
-
+#if CONFIG_CFL
+  for (mode = DC_PRED; mode <= DC_PRED; ++mode) {
+#else
   for (mode = DC_PRED; mode <= TM_PRED; ++mode) {
+#endif
     int64_t this_rd;
     int ratey = 0;
     int64_t distortion = 0;
@@ -4124,7 +4127,11 @@ static int64_t rd_pick_intra_sbuv_mode(const AV1_COMP *const cpi, MACROBLOCK *x,
   palette_mode_info.palette_size[1] = 0;
   pmi->palette_size[1] = 0;
 #endif  // CONFIG_PALETTE
+#if CONFIG_CFL
+  for (mode = DC_PRED; mode <= DC_PRED; ++mode) {
+#else
   for (mode = DC_PRED; mode <= TM_PRED; ++mode) {
+#endif
     if (!(cpi->sf.intra_uv_mode_mask[max_tx_size] & (1 << mode))) continue;
 
     mbmi->uv_mode = mode;

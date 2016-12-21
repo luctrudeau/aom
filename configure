@@ -283,6 +283,7 @@ EXPERIMENT_LIST="
     daala_ec
     pvq
     dct_only
+    cfl
     cb4x4
     frame_size
     delta_q
@@ -457,6 +458,9 @@ post_process_cmdline() {
     for c in ${CODECS}; do
         enabled ${c} && enable_feature ${c##*_}s
     done
+
+    # Enable DCT_ONLY if CFL enabled
+    enabled cfl && enable_feature dct_only
 
     # Enable ref_mv by default
     soft_enable ref_mv
