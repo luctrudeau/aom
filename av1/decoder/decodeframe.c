@@ -407,6 +407,65 @@ static int av1_pvq_decode_helper2(MACROBLOCKD *const xd,
   int ac_dc_coded;  // bit0: DC coded, bit1 : AC coded
   uint8_t *dst;
   int eob;
+  eob = 0;
+  dst = &pd->dst.buf[4 * row * pd->dst.stride + 4 * col];
+  // decode ac/dc coded flag. bit0: DC coded, bit1 : AC coded
+  // NOTE : we don't use 5 symbols for luma here in aom codebase,
+  // since block partition is taken care of by aom.
+  // So, only AC/DC skip info is coded
+  ac_dc_coded = od_decode_cdf_adapt(
+      xd->daala_dec.ec,
+      xd->daala_dec.state.adapt.skip_cdf[2 * tx_size + (plane != 0)], 4,
+      xd->daala_dec.state.adapt.skip_increment, "skip");
+  if (ac_dc_coded) {
+    int xdec = pd->subsampling_x;
+    int seg_id = mbmi->segment_id;
+    int16_t *quant;
+    FWD_TXFM_PARAM fwd_txfm_param;
+    // ToDo(yaowu): correct this with optimal number from decoding process.
+    const int max_scan_line = tx_size_2d[tx_size];
+    for (j = 0; j < tx_blk_size; j++)
+      for (i = 0; i < tx_blk_size; i++) {
+        pred[diff_stride * j + i] = dst[pd->dst.stride * j + i];
+      }
+    fwd_txfm_param.tx_type = tx_type;
+    fwd_txfm_param.tx_size = tx_size;
+    fwd_txfm_param.lossless = xd->lossless[seg_id];
+    fwd_txfm(pred, pvq_ref_coeff, diff_stride, &fwd_txfm_param);
+    quant = &pd->seg_dequant[seg_id][0];  // aom's quantizer
+    eob = av1_pvq_decode_helper(&xd->daala_dec, pvq_ref_coeff, dqcoeff, quant,
+                                plane, tx_size, tx_type, xdec, ac_dc_coded);
+    // Since av1 does not have separate inverse transform
+    // but also contains adding to predicted image,
+    // pass blank dummy image to av1_inv_txfm_add_*x*(), i.e. set dst as zeros
+    for (j = 0; j < tx_blk_size; j++)
+      for (i = 0; i < tx_blk_size; i++) dst[j * pd->dst.stride + i] = 0;
+    inverse_transform_block(xd, plane, tx_type, tx_size, dst, pd->dst.stride,
+                            max_scan_line, eob);
+  }
+  return eob;
+}
+#endif
+
+#if CONFIG_CFL
+static int av1_pvq_decode_helper2_cfl(MACROBLOCKD *const xd,
+                                  MB_MODE_INFO *const mbmi, int plane, int row,
+                                  int col, TX_SIZE tx_size, TX_TYPE tx_type) {
+  struct macroblockd_plane *const pd = &xd->plane[plane];
+  // transform block size in pixels
+  int tx_blk_size = tx_size_wide[tx_size];
+  int i, j;
+  tran_low_t *pvq_ref_coeff = pd->pvq_ref_coeff;
+  const int diff_stride = tx_blk_size;
+  int16_t *pred = pd->pred;
+  tran_low_t *const dqcoeff = pd->dqcoeff;
+  int ac_dc_coded;  // bit0: DC coded, bit1 : AC coded
+  uint8_t *dst;
+  int eob;
+  CFL_CONTEXT *const cfl = xd->cfl;
+  int xdec = pd->subsampling_x;
+  int seg_id = mbmi->segment_id;
+  FWD_TXFM_PARAM fwd_txfm_param;
 
   eob = 0;
   dst = &pd->dst.buf[4 * row * pd->dst.stride + 4 * col];
@@ -420,31 +479,42 @@ static int av1_pvq_decode_helper2(MACROBLOCKD *const xd,
       xd->daala_dec.state.adapt.skip_cdf[2 * tx_size + (plane != 0)], 4,
       xd->daala_dec.state.adapt.skip_increment, "skip");
 
+  for (j = 0; j < tx_blk_size; j++)
+    for (i = 0; i < tx_blk_size; i++) {
+      pred[diff_stride * j + i] = dst[pd->dst.stride * j + i];
+    }
+
+#if CONFIG_DCT_ONLY
+  assert(tx_type == DCT_DCT);
+#endif
+  fwd_txfm_param.tx_type = tx_type;
+  fwd_txfm_param.tx_size = tx_size;
+  fwd_txfm_param.fwd_txfm_opt = FWD_TXFM_OPT_NORMAL;
+  fwd_txfm_param.rd_transform = 0;
+  fwd_txfm_param.lossless = xd->lossless[seg_id];
+  // CfL always requires to transform the prediction in order to get the DC
+  fwd_txfm(pred, pvq_ref_coeff, diff_stride, &fwd_txfm_param);
+
+  if (plane != 0) {
+    // Replace Intra prediction with CfL for ACs
+    cfl_load_predictor(cfl, row, col, pvq_ref_coeff, tx_blk_size);
+  }
+
   if (ac_dc_coded) {
-    int xdec = pd->subsampling_x;
-    int seg_id = mbmi->segment_id;
-    int16_t *quant;
-    FWD_TXFM_PARAM fwd_txfm_param;
-    // ToDo(yaowu): correct this with optimal number from decoding process.
-    const int max_scan_line = tx_size_2d[tx_size];
-
-    for (j = 0; j < tx_blk_size; j++)
-      for (i = 0; i < tx_blk_size; i++) {
-        pred[diff_stride * j + i] = dst[pd->dst.stride * j + i];
-      }
-
-    fwd_txfm_param.tx_type = tx_type;
-    fwd_txfm_param.tx_size = tx_size;
-    fwd_txfm_param.fwd_txfm_opt = FWD_TXFM_OPT_NORMAL;
-    fwd_txfm_param.rd_transform = 0;
-    fwd_txfm_param.lossless = xd->lossless[seg_id];
-
-    fwd_txfm(pred, pvq_ref_coeff, diff_stride, &fwd_txfm_param);
-
-    quant = &pd->seg_dequant[seg_id][0];  // aom's quantizer
+    int16_t *quant = &pd->seg_dequant[seg_id][0];  // aom's quantizer
 
     eob = av1_pvq_decode_helper(&xd->daala_dec, pvq_ref_coeff, dqcoeff, quant,
                                 plane, tx_size, tx_type, xdec, ac_dc_coded);
+  }
+
+  if (plane == 0) {
+    cfl_store_predictor(cfl, row, col, tx_blk_size, pvq_ref_coeff, dqcoeff,
+        ac_dc_coded);
+  }
+
+  if (ac_dc_coded) {
+    // ToDo(yaowu): correct this with optimal number from decoding process.
+    const int max_scan_line = tx_size_2d[tx_size];
 
     // Since av1 does not have separate inverse transform
     // but also contains adding to predicted image,
@@ -453,7 +523,7 @@ static int av1_pvq_decode_helper2(MACROBLOCKD *const xd,
       for (i = 0; i < tx_blk_size; i++) dst[j * pd->dst.stride + i] = 0;
 
     inverse_transform_block(xd, plane, tx_type, tx_size, dst, pd->dst.stride,
-                            max_scan_line, eob);
+                              max_scan_line, eob);
   }
 
   return eob;
@@ -504,9 +574,44 @@ static void predict_and_reconstruct_intra_block(AV1_COMMON *cm,
       inverse_transform_block(xd, plane, tx_type, tx_size, dst, pd->dst.stride,
                               max_scan_line, eob);
 #else
+#if CONFIG_CFL
+    av1_pvq_decode_helper2_cfl(xd, mbmi, plane, row, col, tx_size, tx_type);
+  } else {
+    if (plane == 0) {
+      // Apply CfL (this is required for late skipping)
+      int i,j;
+      int16_t *pred = pd->pred;
+      const int dst_stride = pd->dst.stride;
+      CFL_CONTEXT *const cfl = xd->cfl;
+      TX_TYPE tx_type = get_tx_type(plane_type, xd, block_idx, tx_size);
+      int tx_blk_size = tx_size_wide[tx_size];
+      FWD_TXFM_PARAM fwd_txfm_param;
+      fwd_txfm_param.tx_type = tx_type;
+      fwd_txfm_param.tx_size = tx_size;
+      fwd_txfm_param.fwd_txfm_opt = FWD_TXFM_OPT_NORMAL;
+      fwd_txfm_param.rd_transform = 0;
+      fwd_txfm_param.lossless = xd->lossless[mbmi->segment_id];
+
+      // copy uint8 orig and predicted block to int16 buffer
+      // in order to use existing VP10 transform functions
+      for (j = 0; j < tx_blk_size; j++)
+        for (i = 0; i < tx_blk_size; i++) {
+          pred[tx_blk_size * j + i] = dst[dst_stride * j + i];
+        }
+
+      fwd_txfm(pd->pred, pd->pvq_ref_coeff, tx_blk_size, &fwd_txfm_param);
+      // TODO Experimentation is need to determine if storing DC_PRED + all
+      // zero ACs outperforms storing the luma intra prediction
+
+      // Store predicted Luma intra on block skip
+      cfl_store_predictor(cfl, row, col, tx_blk_size, pd->pvq_ref_coeff,
+          NULL,0);
+    }
+#else
     av1_pvq_decode_helper2(xd, mbmi, plane, row, col, tx_size, tx_type);
-#endif
+#endif // CONFIG_CFL
   }
+#endif
 }
 
 #if CONFIG_VAR_TX
@@ -3204,6 +3309,9 @@ static const uint8_t *decode_tiles(AV1Decoder *pbi, const uint8_t *data,
 #if CONFIG_PVQ
                            td->pvq_ref_coeff,
 #endif
+#if CONFIG_CFL
+                           &td->cfl,
+#endif
                            td->dqcoeff);
 #if CONFIG_PVQ
       daala_dec_init(cm, &td->xd.daala_dec, &td->bit_reader.ec);
@@ -3531,6 +3639,9 @@ static const uint8_t *decode_tiles_mt(AV1Decoder *pbi, const uint8_t *data,
         av1_init_macroblockd(cm, &twd->xd,
 #if CONFIG_PVQ
                              twd->pvq_ref_coeff,
+#endif
+#if CONFIG_CFL
+                             &twd->cfl,
 #endif
                              twd->dqcoeff);
 #if CONFIG_PVQ
