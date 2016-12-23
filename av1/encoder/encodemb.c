@@ -540,6 +540,10 @@ void av1_xform_quant(const AV1_COMMON *cm, MACROBLOCK *x, int plane, int block,
   (void)scan_order;
   (void)qcoeff;
 
+#if CONFIG_CFL
+  CFL_CONTEXT *const cfl = xd->cfl;
+#endif
+
   if (x->pvq_coded) {
     assert(block < MAX_PVQ_BLOCKS_IN_SB);
     pvq_info = &x->pvq[block][plane];
@@ -566,6 +570,9 @@ void av1_xform_quant(const AV1_COMMON *cm, MACROBLOCK *x, int plane, int block,
 #endif
   (void)ctx;
 
+#if CONFIG_DCT_ONLY
+    assert(tx_type == DCT_DCT);
+#endif
   fwd_txfm_param.tx_type = tx_type;
   fwd_txfm_param.tx_size = tx_size;
   fwd_txfm_param.fwd_txfm_opt = fwd_txfm_opt_list[xform_quant_idx];
@@ -605,7 +612,12 @@ void av1_xform_quant(const AV1_COMMON *cm, MACROBLOCK *x, int plane, int block,
   fwd_txfm(pred, ref_coeff, diff_stride, &fwd_txfm_param);
 
   // PVQ for inter mode block
-  if (!x->skip_block)
+  if (!x->skip_block) {
+#if CONFIG_CFL
+    if (x->pvq_coded == 1 && plane != 0) {
+      cfl_load_predictor(cfl, blk_row, blk_col, ref_coeff, tx_blk_size);
+    }
+#endif
     skip = av1_pvq_encode_helper(&x->daala_enc,
                                  coeff,        // target original vector
                                  ref_coeff,    // reference vector
@@ -618,7 +630,21 @@ void av1_xform_quant(const AV1_COMMON *cm, MACROBLOCK *x, int plane, int block,
                                  &x->rate,  // rate measured
                                  x->pvq_speed,
                                  pvq_info);  // PVQ info for a block
-
+#if CONFIG_CFL
+    if (x->pvq_coded == 1 && plane == 0) {
+      cfl_store_predictor(cfl, blk_row, blk_col, tx_blk_size, ref_coeff,
+		      dqcoeff, pvq_info->ac_dc_coded);
+    }
+  } else {
+    if (x->pvq_coded == 1) {
+      if (plane == 0) {
+        // Store predicted Luma intra on block skip
+        cfl_store_predictor(cfl, blk_row, blk_col, tx_blk_size, ref_coeff,
+		      NULL, 0);
+      }
+    }
+#endif
+  }
   x->pvq_skip[plane] = skip;
 
   if (!skip) mbmi->skip = 0;
