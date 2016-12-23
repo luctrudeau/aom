@@ -31,6 +31,9 @@
 #include "av1/common/pvq_state.h"
 #include "av1/decoder/decint.h"
 #endif
+#if CONFIG_CFL
+#include "av1/common/cfl.h"
+#endif
 
 #ifdef __cplusplus
 extern "C" {
@@ -526,6 +529,9 @@ typedef struct macroblockd {
   int prev_qindex;
   int delta_qindex;
   int current_qindex;
+#endif
+#if CONFIG_CFL
+  CFL_CONTEXT *cfl;
 #endif
 } MACROBLOCKD;
 
