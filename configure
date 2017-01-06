@@ -460,7 +460,7 @@ post_process_cmdline() {
     done
 
     # Enable DCT_ONLY if CFL enabled
-    enabled cfl && enable_feature dct_only
+    enabled cfl && enable_feature dct_only && enable_feature pvq
 
     # Enable ref_mv by default
     soft_enable ref_mv

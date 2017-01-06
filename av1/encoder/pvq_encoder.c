@@ -832,6 +832,7 @@ int od_pvq_encode(daala_enc_ctx *enc,
   for (i = 0; i < nb_bands; i++) size[i] = off[i+1] - off[i];
   skip_diff = 0;
   flip = 0;
+#if !CONFIG_CFL
   /*If we are coding a chroma block of a keyframe, we are doing CfL.*/
   if (pli != 0 && is_keyframe) {
     od_val32 xy;
@@ -856,6 +857,7 @@ int od_pvq_encode(daala_enc_ctx *enc,
       for(i = off[0]; i < off[nb_bands]; i++) ref[i] = -ref[i];
     }
   }
+#endif
   for (i = 0; i < nb_bands; i++) {
     int q;
 
@@ -870,8 +872,12 @@ int od_pvq_encode(daala_enc_ctx *enc,
      qm + off[i], qm_inv + off[i], enc->pvq_norm_lambda, speed);
   }
   od_encode_checkpoint(enc, &buf);
+#if CONFIG_CFL
+  if (!is_keyframe) {
+#else
   if (is_keyframe) out[0] = 0;
   else {
+#endif
     int n;
     n = OD_DIV_R0(abs(in[0] - ref[0]), dc_quant);
     if (n == 0) {
@@ -973,8 +979,12 @@ int od_pvq_encode(daala_enc_ctx *enc,
     tell -= (int)floor(.5+8*skip_rate);
   }
   if (nb_bands == 0 || skip_diff <= enc->pvq_norm_lambda/8*tell) {
+#if CONFIG_CFL
+    if (!is_keyframe) {
+#else
     if (is_keyframe) out[0] = 0;
     else {
+#endif
       int n;
       n = OD_DIV_R0(abs(in[0] - ref[0]), dc_quant);
       if (n == 0) {

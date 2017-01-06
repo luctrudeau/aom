@@ -345,7 +345,11 @@ void od_pvq_decode(daala_dec_ctx *dec,
     for (i = 0; i < nb_bands; i++) size[i] = off[i+1] - off[i];
     cfl.ref = ref;
     cfl.nb_coeffs = off[nb_bands];
+#if CONFIG_CFL
+    cfl.allow_flip = 0;
+#else
     cfl.allow_flip = pli != 0 && is_keyframe;
+#endif
     for (i = 0; i < nb_bands; i++) {
       int q;
 

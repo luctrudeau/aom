@@ -1126,6 +1126,11 @@ int av1_pvq_encode_helper(daala_enc_ctx *daala_enc, tran_low_t *const coeff,
 #if PVQ_CHROMA_RD
   double save_pvq_lambda;
 #endif
+#if CONFIG_CFL
+  const int is_keyframe = plane != 0;
+#else
+  const int is_keyframe = 0;
+#endif
 
   DECLARE_ALIGNED(16, int16_t, coeff_pvq[OD_TXSIZE_MAX * OD_TXSIZE_MAX]);
   DECLARE_ALIGNED(16, int16_t, ref_coeff_pvq[OD_TXSIZE_MAX * OD_TXSIZE_MAX]);
@@ -1179,7 +1184,7 @@ int av1_pvq_encode_helper(daala_enc_ctx *daala_enc, tran_low_t *const coeff,
                        plane, tx_size,
                        OD_PVQ_BETA[use_activity_masking][plane][tx_size],
                        OD_ROBUST_STREAM,
-                       0,        // is_keyframe,
+                       is_keyframe,        // is_keyframe,
                        0, 0, 0,  // q_scaling, bx, by,
                        daala_enc->state.qm + off, daala_enc->state.qm_inv + off,
                        speed,  // speed
