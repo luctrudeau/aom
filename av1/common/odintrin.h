@@ -54,7 +54,11 @@ extern "C" {
 
 # define OD_COEFF_SHIFT (4)
 
+#if CONFIG_CFL
+# define OD_DISABLE_CFL (0)
+#else
 # define OD_DISABLE_CFL (1)
+#endif
 # define OD_DISABLE_FILTER (1)
 
 # define OD_ENABLE_ASSERTIONS (1)

@@ -669,6 +669,9 @@ void pvq_encode_partition(od_ec_enc *ec,
      larger gain and theta values. For noref, theta = -1. */
   od_encode_cdf_adapt(ec, id, &adapt->pvq.pvq_gaintheta_cdf[cdf_ctx][0],
    8 + 7*code_skip, adapt->pvq.pvq_gaintheta_increment);
+#if CONFIG_CFL
+  encode_flip = 0;
+#endif
   if (encode_flip) {
     /* We could eventually do some smarter entropy coding here, but it would
        have to be good enough to overcome the overhead of the entropy coder.
@@ -832,6 +835,7 @@ int od_pvq_encode(daala_enc_ctx *enc,
   for (i = 0; i < nb_bands; i++) size[i] = off[i+1] - off[i];
   skip_diff = 0;
   flip = 0;
+#if !CONFIG_CFL
   /*If we are coding a chroma block of a keyframe, we are doing CfL.*/
   if (pli != 0 && is_keyframe) {
     od_val32 xy;
@@ -856,6 +860,7 @@ int od_pvq_encode(daala_enc_ctx *enc,
       for(i = off[0]; i < off[nb_bands]; i++) ref[i] = -ref[i];
     }
   }
+#endif
   for (i = 0; i < nb_bands; i++) {
     int q;
 
