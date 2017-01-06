@@ -635,10 +635,9 @@ void av1_xform_quant(const AV1_COMMON *cm, MACROBLOCK *x, int plane, int block,
   } else {
     if (x->pvq_coded == 1) {
       if (plane == 0) {
+        // Store predicted Luma intra on block skip
         cfl_store_predictor(cfl, blk_row, blk_col, tx_blk_size, ref_coeff,
 		      NULL, 0);
-      } else {
-        cfl_load_predictor(cfl, blk_row, blk_col, ref_coeff, tx_blk_size);
       }
     }
 #endif

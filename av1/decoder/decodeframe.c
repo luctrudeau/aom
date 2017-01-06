@@ -573,37 +573,33 @@ static void predict_and_reconstruct_intra_block(AV1_COMMON *cm,
 #if CONFIG_CFL
     av1_pvq_decode_helper2_cfl(xd, mbmi, plane, row, col, tx_size, tx_type);
   } else {
-    // Apply CfL (this is required for late skipping)
-    int i,j;
-    int16_t *pred = pd->pred;
-    const int dst_stride = pd->dst.stride;
-    CFL_CONTEXT *const cfl = xd->cfl;
-    TX_TYPE tx_type = get_tx_type(plane_type, xd, block_idx, tx_size);
-    int tx_blk_size = tx_size_wide[tx_size];
-    FWD_TXFM_PARAM fwd_txfm_param;
-    fwd_txfm_param.tx_type = tx_type;
-    fwd_txfm_param.tx_size = tx_size;
-    fwd_txfm_param.fwd_txfm_opt = FWD_TXFM_OPT_NORMAL;
-    fwd_txfm_param.rd_transform = 0;
-    fwd_txfm_param.lossless = xd->lossless[mbmi->segment_id];
+    if (plane == 0) {
+      // Apply CfL (this is required for late skipping)
+      int i,j;
+      int16_t *pred = pd->pred;
+      const int dst_stride = pd->dst.stride;
+      CFL_CONTEXT *const cfl = xd->cfl;
+      TX_TYPE tx_type = get_tx_type(plane_type, xd, block_idx, tx_size);
+      int tx_blk_size = tx_size_wide[tx_size];
+      FWD_TXFM_PARAM fwd_txfm_param;
+      fwd_txfm_param.tx_type = tx_type;
+      fwd_txfm_param.tx_size = tx_size;
+      fwd_txfm_param.fwd_txfm_opt = FWD_TXFM_OPT_NORMAL;
+      fwd_txfm_param.rd_transform = 0;
+      fwd_txfm_param.lossless = xd->lossless[mbmi->segment_id];
 
-    // copy uint8 orig and predicted block to int16 buffer
-    // in order to use existing VP10 transform functions
-    for (j = 0; j < tx_blk_size; j++)
-      for (i = 0; i < tx_blk_size; i++) {
-        pred[tx_blk_size * j + i] = dst[dst_stride * j + i];
-      }
+      // copy uint8 orig and predicted block to int16 buffer
+      // in order to use existing VP10 transform functions
+      for (j = 0; j < tx_blk_size; j++)
+        for (i = 0; i < tx_blk_size; i++) {
+          pred[tx_blk_size * j + i] = dst[dst_stride * j + i];
+        }
 
-    fwd_txfm(pd->pred, pd->pvq_ref_coeff, tx_blk_size, &fwd_txfm_param);
-    if (plane != 0) {
-      // FIXME For chroma, since DC_PRED is forced, computing the average is
-      // more efficient than performing the transform.
-      cfl_load_predictor(cfl, row, col, pd->pvq_ref_coeff, tx_blk_size);
-
-    } else {
+      fwd_txfm(pd->pred, pd->pvq_ref_coeff, tx_blk_size, &fwd_txfm_param);
       // TODO Experimentation is need to determine if storing DC_PRED + all
       // zero ACs outperforms storing the luma intra prediction
 
+      // Store predicted Luma intra on block skip
       cfl_store_predictor(cfl, row, col, tx_blk_size, pd->pvq_ref_coeff,
           NULL,0);
     }
