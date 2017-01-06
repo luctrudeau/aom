@@ -56,10 +56,12 @@ void cfl_load_predictor(CFL_CONTEXT *const cfl, int blk_row, int blk_col,
 
     // CFL does not apply to DC (only AC)
     for (i = 1; i < tx_blk_size * tx_blk_size; i++) {
-      ref_coeff[i] = ref_coeff_high[i] >> 1;
       // Applying TF to bigger transforms can cause overflow
-      // >> 1 should solve it, but let's avoid surprises
-      assert(ref_coeff[i] < INT16_MAX);
+      if (ref_coeff_high[i] >= INT16_MAX) {
+        ref_coeff[i] = INT16_MAX;
+      } else {
+        ref_coeff[i] = ref_coeff_high[i];
+      }
     }
   } else {
     // 1 luma block associated to 1 chroma block (half the size)
