@@ -80,6 +80,12 @@ typedef struct PVQ_INFO {
   int ac_dc_coded;  // block skip info, indicating whether DC/AC is coded.
                     // bit0: DC coded, bit1 : AC coded (1 means coded)
   tran_low_t dq_dc_residue;
+#if CONFIG_CFL
+  int cfl_flip;
+  // This is a copy of the pvq_coded variable, because we need to know if we
+  // are in RDO or not in order to avoid performing CfL in RDO
+  int coded;
+#endif
 } PVQ_INFO;
 
 typedef struct PVQ_QUEUE {
