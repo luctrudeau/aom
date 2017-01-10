@@ -2119,11 +2119,14 @@ static void write_modes_b(AV1_COMP *cpi, const TileInfo *const tile,
         for (idx = 0; idx < max_blocks_wide; idx += step) {
 #if CONFIG_CFL
           const int is_keyframe = plane != 0;
+          int cfl_encoded = 0;
+          int encode_flip;
+          int flip;
 #else
           const int is_keyframe = 0;
-#endif
           const int encode_flip = 0;
           const int flip = 0;
+#endif
           const int robust = 1;
           int i;
           const int has_dc_skip = 1;
@@ -2132,7 +2135,6 @@ static void write_modes_b(AV1_COMP *cpi, const TileInfo *const tile,
           generic_encoder *model = adapt->pvq.pvq_param_model;
 
           pvq = get_pvq_block(cpi->td.mb.pvq_q);
-
           // encode block skip info
           od_encode_cdf_adapt(&w->ec, pvq->ac_dc_coded,
                               adapt->skip_cdf[2 * tx_size + (plane != 0)], 4,
@@ -2141,7 +2143,14 @@ static void write_modes_b(AV1_COMP *cpi, const TileInfo *const tile,
           // AC coeffs coded?
           if (pvq->ac_dc_coded & 0x02) {
             assert(pvq->bs <= tx_size);
+#if CONFIG_CFL
+            flip = pvq->flip;
+#endif
             for (i = 0; i < pvq->nb_bands; i++) {
+#if CONFIG_CFL
+              /* Encode CFL flip bit just after the first time it's used. */
+              encode_flip = plane != 0 && is_keyframe && pvq->theta[i] != -1 && !cfl_encoded;
+#endif
               if (i == 0 || (!pvq->skip_rest &&
                              !(pvq->skip_dir & (1 << ((i - 1) % 3))))) {
                 pvq_encode_partition(
@@ -2160,6 +2169,9 @@ static void write_modes_b(AV1_COMP *cpi, const TileInfo *const tile,
                          .pvq_skip_dir_cdf[(plane != 0) + 2 * (pvq->bs - 1)][0],
                     7, adapt->pvq.pvq_skip_dir_increment);
               }
+#if CONFIG_CFL
+              if (encode_flip) cfl_encoded = 1;
+#endif
             }
           }
           // Encode residue of DC coeff, if exist.
