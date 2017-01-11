@@ -870,8 +870,16 @@ int od_pvq_encode(daala_enc_ctx *enc,
      qm + off[i], qm_inv + off[i], enc->pvq_norm_lambda, speed);
   }
   od_encode_checkpoint(enc, &buf);
+#if CONFIG_CFL
+  // In Daala keyframes, the DC is coded separately from the ACs (HAAR DC).
+  // This is not the case for AV1, so don't zero it out.
+  // FIXME To we want to RDO QUANT the DC? In other words, do we want to go into
+  // the else clause for Chroma planes?
+  if (!is_keyframe) {
+#else
   if (is_keyframe) out[0] = 0;
   else {
+#endif
     int n;
     n = OD_DIV_R0(abs(in[0] - ref[0]), dc_quant);
     if (n == 0) {
@@ -973,8 +981,16 @@ int od_pvq_encode(daala_enc_ctx *enc,
     tell -= (int)floor(.5+8*skip_rate);
   }
   if (nb_bands == 0 || skip_diff <= enc->pvq_norm_lambda/8*tell) {
+#if CONFIG_CFL
+    // In Daala keyframes, the DC is coded separately from the ACs (HAAR DC).
+    // This is not the case for AV1, so don't zero it out.
+    // FIXME To we want to RDO QUANT the DC? In other words, do we want to go
+    // into the else clause for Chroma planes?
+    if (!is_keyframe) {
+#else
     if (is_keyframe) out[0] = 0;
     else {
+#endif
       int n;
       n = OD_DIV_R0(abs(in[0] - ref[0]), dc_quant);
       if (n == 0) {

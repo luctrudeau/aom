@@ -328,7 +328,14 @@ static int av1_pvq_decode_helper(od_dec_ctx *dec, int16_t *ref_coeff,
                                  int ac_dc_coded) {
   unsigned int flags;  // used for daala's stream analyzer.
   int off;
+#if CONFIG_CFL
+  // In Daala, encoding a keyframe implies special considerations that are not
+  // relevant to AV1's Intra Luma plane. However, to use CfL on AV1's Intra
+  // Chroma planes, these considerations must be enabled.
+  const int is_keyframe = pli != 0;
+#else
   const int is_keyframe = 0;
+#endif
   const int has_dc_skip = 1;
   int quant_shift = get_tx_scale(bs);
   // DC quantizer for PVQ
