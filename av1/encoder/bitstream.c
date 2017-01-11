@@ -2117,7 +2117,14 @@ static void write_modes_b(AV1_COMP *cpi, const TileInfo *const tile,
 
       for (idy = 0; idy < max_blocks_high; idy += step) {
         for (idx = 0; idx < max_blocks_wide; idx += step) {
+#if CONFIG_CFL
+          // In Daala, encoding a keyframe implies special considerations that
+          // are not relevant to AV1's Intra Luma plane. However, to use CfL on
+          // AV1's Intra Chroma planes, these considerations must be enabled.
+          const int is_keyframe = plane != 0;
+#else
           const int is_keyframe = 0;
+#endif
           const int encode_flip = 0;
           const int flip = 0;
           const int robust = 1;
