@@ -1679,6 +1679,9 @@ static void rd_pick_sb_modes(const AV1_COMP *const cpi, TileDataEnc *tile_data,
   x->pvq_speed = 1;
   x->pvq_coded = 0;
 #endif
+#if CONFIG_CFL
+  x->cfl_store_luma = 0;
+#endif
 
   set_offsets(cpi, tile_info, x, mi_row, mi_col, bsize);
   mbmi = &xd->mi[0]->mbmi;
@@ -4298,7 +4301,9 @@ static void rd_pick_partition(const AV1_COMP *const cpi, ThreadData *td,
 #if CONFIG_SUPERTX
   *rate_nocoef = best_rate_nocoef;
 #endif  // CONFIG_SUPERTX
-
+#if CONFIG_CFL
+  x->cfl_store_luma = 1;
+#endif
   if (best_rdc.rate < INT_MAX && best_rdc.dist < INT64_MAX &&
       pc_tree->index != 3) {
     if (bsize == cm->sb_size) {
@@ -4309,6 +4314,9 @@ static void rd_pick_partition(const AV1_COMP *const cpi, ThreadData *td,
                 pc_tree, NULL);
     }
   }
+#if CONFIG_CFL
+  x->cfl_store_luma = 0;
+#endif
 
   if (bsize == cm->sb_size) {
 #if !CONFIG_PVQ

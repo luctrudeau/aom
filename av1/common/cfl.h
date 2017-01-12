@@ -25,7 +25,10 @@ extern "C" {
 
 // CFL: This will replace cfl_ctx
 typedef struct cfl_context {
-  int luma_tx_blk_sizes[CFL_MAX_TX_BLOCKS];
+
+  /* Transform size can differ between Luma and Chroma. We store Luma in order
+   * to properly perform CfL. */
+  int luma_tx_blk_size;
 
   /* Dequantized transformed coefficients of Luma used to predict Chroma.*/
   DECLARE_ALIGNED(16, tran_low_t, luma_coeff[MAX_SB_SQUARE]);

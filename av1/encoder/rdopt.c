@@ -3048,6 +3048,25 @@ static int64_t rd_pick_intra_sby_mode(const AV1_COMP *const cpi, MACROBLOCK *x,
     }
   }
 
+#if CONFIG_CFL
+// Encode one more time but with best Luma values
+
+  // set some magic flag!
+
+  // How about we start with this?
+//  super_block_yrd(cpi, x, &this_rd_stats, bsize, best_rd);
+
+  RD_STATS this_rd_stats;
+  int64_t tmp = INT64_MAX;
+  printf("Les boys!\n");
+  x->cfl_store_luma = 1;
+  txfm_rd_in_plane(x, cpi, &this_rd_stats, tmp, 0, bsize, mic->mbmi.tx_size,
+                   cpi->sf.use_fast_coef_costing);
+  x->cfl_store_luma = 0;
+  printf("Je fais de la magie!\n");
+ // assert(0);
+#endif
+
 #if CONFIG_PVQ
   od_encode_rollback(&x->daala_enc, &post_buf);
 #endif

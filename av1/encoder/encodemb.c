@@ -614,11 +614,14 @@ void av1_xform_quant(const AV1_COMMON *cm, MACROBLOCK *x, int plane, int block,
   // PVQ for inter mode block
   if (!x->skip_block) {
 #if CONFIG_CFL
-    if (x->pvq_coded == 1 && plane != 0) {
+    assert(x->cfl_store_luma == 0 || x->cfl_store_luma == 1);
+    printf("[%d](%d, %d) Mode %d Size %d Store Luma %d PVQ_coded %d\n", plane, blk_row, blk_col, mbmi->mode, tx_blk_size,
+        x->cfl_store_luma, x->pvq_coded);
+    if (/*x->pvq_coded == 1 &&*/ plane != 0) {
       cfl_load_predictor(cfl, blk_row, blk_col, ref_coeff, tx_blk_size);
     }
 #endif
-    skip = av1_pvq_encode_helper(&x->daala_enc,
+    int ac_dc_coded = av1_pvq_encode_helper(&x->daala_enc,
                                  coeff,        // target original vector
                                  ref_coeff,    // reference vector
                                  dqcoeff,      // de-quantized vector
@@ -630,17 +633,19 @@ void av1_xform_quant(const AV1_COMMON *cm, MACROBLOCK *x, int plane, int block,
                                  &x->rate,  // rate measured
                                  x->pvq_speed,
                                  pvq_info);  // PVQ info for a block
+    skip = ac_dc_coded == 0;
 #if CONFIG_CFL
-    if (x->pvq_coded == 1 && plane == 0) {
-      cfl_store_predictor(cfl, blk_row, blk_col, tx_blk_size, ref_coeff,
-		      dqcoeff, pvq_info->ac_dc_coded);
+    if (plane == 0) {
+      if (x->pvq_coded == 1 || x->cfl_store_luma == 1) {
+        cfl_store_predictor(cfl, blk_row, blk_col, tx_blk_size, ref_coeff,
+            dqcoeff, ac_dc_coded);
+      }
     }
   } else {
-    if (x->pvq_coded == 1) {
-      if (plane == 0) {
-        // Store predicted Luma intra on block skip
+    if (plane == 0) {
+      if (x->pvq_coded == 1 || x->cfl_store_luma == 1) {
         cfl_store_predictor(cfl, blk_row, blk_col, tx_blk_size, ref_coeff,
-		      NULL, 0);
+            NULL, 0);
       }
     }
 #endif
@@ -1144,7 +1149,7 @@ int av1_pvq_encode_helper(daala_enc_ctx *daala_enc, tran_low_t *const coeff,
                           int tx_size, TX_TYPE tx_type, int *rate, int speed,
                           PVQ_INFO *pvq_info) {
   const int tx_blk_size = tx_size_wide[tx_size];
-  int skip;
+  int ac_dc_coded;
   int quant_shift = get_tx_scale(tx_size);
   int pvq_dc_quant;
   int use_activity_masking = daala_enc->use_activity_masking;
@@ -1210,7 +1215,7 @@ int av1_pvq_encode_helper(daala_enc_ctx *daala_enc, tran_low_t *const coeff,
     out_int32[0] = OD_DIV_R0(in_int32[0] - ref_int32[0], pvq_dc_quant);
   }
 
-  skip = od_pvq_encode(daala_enc, ref_int32, in_int32, out_int32,
+  ac_dc_coded = od_pvq_encode(daala_enc, ref_int32, in_int32, out_int32,
                        (int)quant[0] >> quant_shift,  // scale/quantizer
                        (int)quant[1] >> quant_shift,  // scale/quantizer
                        plane, tx_size,
@@ -1222,10 +1227,6 @@ int av1_pvq_encode_helper(daala_enc_ctx *daala_enc, tran_low_t *const coeff,
                        speed,  // speed
                        pvq_info);
 
-  if (skip && pvq_info) assert(pvq_info->ac_dc_coded == 0);
-
-  if (!skip && pvq_info) assert(pvq_info->ac_dc_coded > 0);
-
   // Encode residue of DC coeff, if required.
   if (!has_dc_skip || out_int32[0]) {
     generic_encode(&daala_enc->ec, &daala_enc->state.adapt.model_dc[plane],
@@ -1234,7 +1235,6 @@ int av1_pvq_encode_helper(daala_enc_ctx *daala_enc, tran_low_t *const coeff,
   }
   if (out_int32[0]) {
     od_ec_enc_bits(&daala_enc->ec, out_int32[0] < 0, 1);
-    skip = 0;
   }
 
   // need to save quantized residue of DC coeff
@@ -1259,7 +1259,7 @@ int av1_pvq_encode_helper(daala_enc_ctx *daala_enc, tran_low_t *const coeff,
 #if PVQ_CHROMA_RD
   if (plane != 0) daala_enc->pvq_norm_lambda = save_pvq_lambda;
 #endif
-  return skip;
+  return ac_dc_coded;
 }
 
 void av1_store_pvq_enc_info(PVQ_INFO *pvq_info, int *qg, int *theta,

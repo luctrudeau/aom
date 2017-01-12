@@ -123,9 +123,9 @@ AV1_COMMON_SRCS-yes += common/pvq_state.h
 AV1_COMMON_SRCS-yes += common/laplace_tables.c
 endif
 
-ifeq ($(CONFIG_CFL),yes)
 # CfL from daala
 AV1_COMMON_SRCS-yes += common/cfl.c
+ifeq ($(CONFIG_CFL),yes)
 AV1_COMMON_SRCS-yes += common/cfl.h
 endif
 
