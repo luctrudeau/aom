@@ -16,107 +16,153 @@
 #include <assert.h>
 
 
+void tf_merge_and_subsample(CFL_CONTEXT *const cfl, tran_low_t *const dst,
+    int dstride, const tran_low_t *const src, int sstride, int y_tx_size,
+    int uv_tx_size) {
+
+  //Size of the 2x2 group of nxn blocks.
+  const int total_size = uv_tx_size << 1;
+
+  // Double buffer setup
+  tran_high_t *sbuf = cfl->buf1;
+  tran_high_t *dbuf = cfl->buf2;
+  tran_high_t out;
+  int i, j;
+
+  // Copy 16 bit src over to 32 bits
+  assert(total_size <= MAX_SB_SIZE);
+  for (j = 0; j < total_size; j++) {
+    for (i = 0; i < total_size; i++) {
+      sbuf[MAX_SB_SIZE * j + i] = src[sstride * j + i];
+    }
+  }
+
+  // TF merge until the prediction is the required size
+  while (y_tx_size < uv_tx_size) {
+    int next_y_tx_size = y_tx_size << 1;
+    int row = 0;
+
+    // swap buffers
+    tran_high_t *tmp = sbuf;
+    sbuf = dbuf;
+    dbuf = tmp;
+
+    for (j = 0; j < total_size; j += next_y_tx_size) {
+      for (i = 0; i < total_size; i += next_y_tx_size) {
+        od_tf_up_hv(sbuf + row + i, MAX_SB_SIZE, dbuf + row + i,
+            MAX_SB_SIZE, y_tx_size);
+      }
+      row += MAX_SB_SIZE;
+    }
+    y_tx_size = next_y_tx_size;
+  }
+  assert(y_tx_size == uv_tx_size);
+
+  // TF merge last level and keep top left quadrant (this compensates for
+  // chroma subsampling).
+  od_tf_up_hv_lp(dbuf, MAX_SB_SIZE, sbuf, MAX_SB_SIZE, uv_tx_size, uv_tx_size,
+        uv_tx_size);
+
+  for (j = 0; j < uv_tx_size; j++) {
+    for (i = 0; i < uv_tx_size; i++) {
+      // FIXME Still not sure why this scaling is required (TF being unit scale)
+      // I also need to figure out, if we need to increase scaling by the number
+      // of TF operations performed.
+      out = dbuf[MAX_SB_SIZE * j + i] >>= 1;
+      // Clip as TF on bigger transforms can overflow
+      dst[dstride * j + i] = (out < INT16_MAX) ? out : INT16_MAX;
+    }
+  }
+}
+
 void cfl_load_predictor(CFL_CONTEXT *const cfl, int blk_row, int blk_col,
-		tran_low_t *const ref_coeff, int tx_blk_size) {
+		tran_low_t *const ref_coeff, int uv_tx_size) {
+
   const int scale = 4; // Needs to be adjusted to support 4:4:4
-  const tran_low_t *luma_coeff;
-  tran_high_t *const ref_coeff_high = cfl->ref_coeff_high;
-  int luma_tx_offset;
-  int luma_tx_blk_size;
+  const int y_tx_size = cfl->luma_tx_blk_size;
+  const tran_low_t *y_coeff;
+  const tran_low_t dc = ref_coeff[0];
   int coeff_offset;
-  int i, j, k = 1;
 
-  // Needs to be adjusted to support 4:4:4
-  blk_row *= 2;
-  blk_col *= 2;
+  // Check that tx_sizes are valid.
+  assert(y_tx_size > 0 && y_tx_size <= MAX_TX_SIZE);
+  assert(uv_tx_size > 0 && uv_tx_size <= MAX_TX_SIZE);
 
-  luma_tx_offset = blk_row * CFL_TX_STRIDE + blk_col;
-  coeff_offset = scale * blk_row * MAX_SB_SIZE + (scale * blk_col);
+  // Adjusting row and cols for 4:2:0. It is important to note that the
+  // prediction is always the first AC coeffs (not the collocated coeffs).
+  blk_row = (blk_row * scale * 2) / y_tx_size * y_tx_size;
+  blk_col = (blk_col * scale * 2) / y_tx_size * y_tx_size;
 
-  // Check that the tx offset stay inside the tx block memory
-  assert(luma_tx_offset < CFL_MAX_TX_BLOCKS);
+  coeff_offset = blk_row * MAX_SB_SIZE + (blk_col);
+
   // Check that the last coeff offset is smaller than the max superblock size
   assert(coeff_offset
-    + ((tx_blk_size-1) * MAX_SB_SIZE + (tx_blk_size-1)) < MAX_SB_SQUARE);
+      + ((uv_tx_size-1) * MAX_SB_SIZE + (uv_tx_size-1)) < MAX_SB_SQUARE);
 
-  luma_coeff = &cfl->luma_coeff[coeff_offset];
-  luma_tx_blk_size = cfl->luma_tx_blk_sizes[luma_tx_offset];
+  y_coeff = &cfl->luma_coeff[coeff_offset];
 
-  if (tx_blk_size == luma_tx_blk_size) {
-    // 4 luma block associated with 1 chroma block
+  if (y_tx_size > uv_tx_size) {
+    // When the CfL prediction is bigger than what is needed, we only take the
+    // part that is needed.
+    int shift = (y_tx_size / uv_tx_size) >> 1;
+    int i, j, k = 0;
 
-    // zero out ref_coeff (this might not be needed)
-    for (i = 0; i < MAX_TX_SQUARE; i++) {
-      ref_coeff_high[i] = 0;
-    }
+    // 1 and 2 are the only scale changes supported for now.
+    assert(shift == 1 || shift == 2);
 
-    // We perform TF and keep the top left quadrant
-    od_tf_up_hv_lp(ref_coeff_high, tx_blk_size, luma_coeff, MAX_SB_SIZE,
-		    tx_blk_size, tx_blk_size, tx_blk_size);
+    // Don't scale the 32x32, it's already scaled.
+    if (uv_tx_size > 16) shift--;
 
-    // CFL does not apply to DC (only AC)
-    for (i = 1; i < tx_blk_size * tx_blk_size; i++) {
-      // Applying TF to bigger transforms can cause overflow
-      if (ref_coeff_high[i] >= INT16_MAX) {
-        ref_coeff[i] = INT16_MAX;
-      } else {
-        ref_coeff[i] = ref_coeff_high[i];
+    for (j = 0; j < uv_tx_size; j++) {
+      for (i = 0; i < uv_tx_size; i++) {
+        // Scale coefficients as the inverse transform is half the size of the
+        // forward transform
+        ref_coeff[k++] = y_coeff[MAX_SB_SIZE * j + i] >> shift;
       }
     }
   } else {
-    // 1 luma block associated to 1 chroma block (half the size)
-    assert(tx_blk_size * 2 == luma_tx_blk_size);
-
-    // CFL does not apply to DC (only AC)
-    // First row
-    for (i = 1; i < tx_blk_size; i++) {
-      if ( tx_blk_size < 16 ) {
-        // Scale the values as the inverse transform will be half the size of
-        // the forward transform.
-        ref_coeff[k++] = luma_coeff[i] >> 1;
-      } else {
-	// Don't scale the 32x32 it's already scaled
-        ref_coeff[k++] = luma_coeff[i];
-      }
-    }
-    // remainder of the block
-    for (j = 1; j < tx_blk_size; j++) {
-      for (i = 0; i < tx_blk_size; i++) {
-        if ( tx_blk_size < 16 ) {
-          ref_coeff[k++] = luma_coeff[j * MAX_SB_SIZE + i] >> 1;
-	} else {
-          ref_coeff[k++] = luma_coeff[j * MAX_SB_SIZE + i];
-	}
-      }
-    }
+    tf_merge_and_subsample(cfl, ref_coeff, uv_tx_size, y_coeff, MAX_SB_SIZE,
+        y_tx_size, uv_tx_size);
   }
+  // CfL does not apply to dc (only ac)
+  ref_coeff[0] = dc;
 }
 
 /* Store the values of the luma plane to predict the values of the chroma plane
  *  * If the AC values are coded the dequantized transformed coefficients are
  *    used
- *  * if the AC values are skipped, the intra luma prediction is used.
+ *  * If the AC values are skipped, the intra luma prediction is used.
  */
 void cfl_store_predictor(CFL_CONTEXT *const cfl, int blk_row, int blk_col,
 		int tx_blk_size, const tran_low_t *const ref_coeff,
 		const tran_low_t *const dqcoeff, int ac_dc_coded) {
 
   const int scale = 4; // Needs to be adjusted to support 4:4:4
-  const int tx_offset = blk_row * CFL_TX_STRIDE + blk_col;
   const int coeff_offset = scale * blk_row * MAX_SB_SIZE + (scale * blk_col);
   const tran_low_t *src;
   tran_low_t *const luma_coeff = &cfl->luma_coeff[coeff_offset];
   int i,j,k = 0;
 
-  // Check that the tx offset stay inside the tx block memory
-  assert(tx_offset < CFL_MAX_TX_BLOCKS);
+  if (blk_row != 0 || blk_col != 0) {
+    // Check that all luma parts are the same size
+    assert(cfl->luma_tx_blk_size == tx_blk_size);
+  } else {
+    // We store the Luma transform size as it can differ from the chroma
+    // transform size. We assume that Luma transform size is constant inside a
+    // partition.
+    cfl->luma_tx_blk_size = tx_blk_size;
+
+    if (luma_coeff == cfl->luma_coeff) {
+      // Zero out luma_coeff on first store. This is important as frame
+      // boundary situations can cause reading from stale memory.
+      memset(luma_coeff, 0, sizeof(tran_low_t) * MAX_SB_SQUARE);
+    }
+  }
+
   // Check that the last coeff offset is smaller than the max superblock size
   assert(coeff_offset
     + ((tx_blk_size-1) * MAX_SB_SIZE + (tx_blk_size-1)) < MAX_SB_SQUARE);
 
-  // We need to store the size of the luma transform to compare with the size
-  // of the chroma transform. This indicates if we need to perform TF
-  cfl->luma_tx_blk_sizes[tx_offset] = tx_blk_size;
 
   switch(ac_dc_coded) {
     case 0: // DC and AC are skipped
@@ -144,7 +190,7 @@ void cfl_store_predictor(CFL_CONTEXT *const cfl, int blk_row, int blk_col,
 /*Increase horizontal and vertical frequency resolution of an entire block and
    return the LF quarter.*/
 void od_tf_up_hv_lp(tran_high_t *const dst, int dstride,
- const tran_low_t *const src, int sstride, int dx, int dy, int n) {
+ const tran_high_t *const src, int sstride, int dx, int dy, int n) {
   int x;
   int y;
   for (y = 0; y < n >> 1; y++) {
@@ -161,6 +207,36 @@ void od_tf_up_hv_lp(tran_high_t *const dst, int dstride,
       hl = src[(y + dy)*sstride + x];
       hh = src[(y + dy)*sstride + x + dx];
       /*We swap lh and hl for compatibility with od_tf_up_hv.*/
+      OD_HAAR_KERNEL(ll, hl, lh, hh);
+      hswap = x & 1;
+      dst[(2*y + vswap)*dstride + 2*x + hswap] = ll;
+      dst[(2*y + vswap)*dstride + 2*x + 1 - hswap] = lh;
+      dst[(2*y + 1 - vswap)*dstride + 2*x + hswap] = hl;
+      dst[(2*y + 1 - vswap)*dstride + 2*x + 1 - hswap] = hh;
+    }
+  }
+}
+
+/*Increase horizontal and vertical frequency resolution of a 2x2 group of
+  nxn blocks, combining them into a single 2nx2n block.*/
+void od_tf_up_hv(tran_high_t *dst, int dstride, const tran_high_t *const  src,
+    int sstride, int n) {
+  int x;
+  int y;
+  for (y = 0; y < n; y++) {
+    int vswap;
+    vswap = y & 1;
+    for (x = 0; x < n; x++) {
+      tran_high_t ll;
+      tran_high_t lh;
+      tran_high_t hl;
+      tran_high_t hh;
+      int hswap;
+      ll = src[y*sstride + x];
+      lh = src[y*sstride + x + n];
+      hl = src[(y + n)*sstride + x];
+      hh = src[(y + n)*sstride + x + n];
+      /*We have to swap lh and hl for exact reversibility with od_tf_up_down.*/
       OD_HAAR_KERNEL(ll, hl, lh, hh);
       hswap = x & 1;
       dst[(2*y + vswap)*dstride + 2*x + hswap] = ll;

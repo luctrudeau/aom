@@ -25,14 +25,17 @@ extern "C" {
 
 // CFL: This will replace cfl_ctx
 typedef struct cfl_context {
-  int luma_tx_blk_sizes[CFL_MAX_TX_BLOCKS];
+
+  /* Transform size can differ between Luma and Chroma. We store Luma in order
+   * to properly perform CfL. */
+  int luma_tx_blk_size;
 
   /* Dequantized transformed coefficients of Luma used to predict Chroma.*/
   DECLARE_ALIGNED(16, tran_low_t, luma_coeff[MAX_SB_SQUARE]);
 
-  // Temporary memory used by TF to avoid overflow on large transform sizes
+  // Double buffer system used by TF merge.
   // It's located in cfl_context to avoid collisions between threads.
-  tran_high_t ref_coeff_high[MAX_TX_SQUARE];
+  tran_high_t buf1[MAX_SB_SQUARE], buf2[MAX_SB_SQUARE];
 } CFL_CONTEXT;
 
 
@@ -63,8 +66,15 @@ void cfl_store_predictor(CFL_CONTEXT *const cfl, int blk_row, int blk_col,
   while(0)
 
 
-void od_tf_up_hv_lp(tran_high_t *dst, int dstride, const tran_low_t *src,
+void od_tf_up_hv_lp(tran_high_t *dst, int dstride, const tran_high_t *const src,
 		int sstride, int dx, int dy, int n);
+
+void od_tf_up_hv(tran_high_t *dst, int dstride, const tran_high_t *src,
+    int sstride, int n);
+
+void tf_merge_and_subsample(CFL_CONTEXT *const cfl, tran_low_t *const dst,
+    int dstride, const tran_low_t *const src, int sstride, int y_tx_size,
+    int uv_tx_size);
 
 #ifdef __cplusplus
 }  // extern "C"

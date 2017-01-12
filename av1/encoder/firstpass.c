@@ -548,6 +548,9 @@ void av1_first_pass(AV1_COMP *cpi, const struct lookahead_entry *source) {
                     aom_malloc(pvq_q.buf_len * sizeof(PVQ_INFO)));
     pvq_q.curr_pos = 0;
     x->pvq_coded = 0;
+#if CONFIG_CFL
+    x->cfl_store_y = 0;
+#endif
 
     x->pvq_q = &pvq_q;
 
