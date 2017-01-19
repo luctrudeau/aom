@@ -211,7 +211,7 @@ void od_tf_up_hv_lp(tran_high_t *const dst, int dstride,
 
 /*Increase horizontal and vertical frequency resolution of a 2x2 group of
   nxn blocks, combining them into a single 2nx2n block.*/
-void od_tf_up_hv(tran_high_t *dst, int dstride, const tran_high_t const* src,
+void od_tf_up_hv(tran_high_t *dst, int dstride, const tran_high_t *const  src,
     int sstride, int n) {
   int x;
   int y;

@@ -66,14 +66,15 @@ void cfl_store_predictor(CFL_CONTEXT *const cfl, int blk_row, int blk_col,
   while(0)
 
 
-void od_tf_up_hv_lp(tran_high_t *dst, int dstride, const tran_high_t const* src,
+void od_tf_up_hv_lp(tran_high_t *dst, int dstride, const tran_high_t *const src,
 		int sstride, int dx, int dy, int n);
 
 void od_tf_up_hv(tran_high_t *dst, int dstride, const tran_high_t *src,
     int sstride, int n);
 
-void tf_merge_and_subsample(CFL_CONTEXT *const cfl, tran_low_t *const dst, int dstride,
-    const tran_low_t *const src, int sstride, int y_tx_size, int uv_tx_size);
+void tf_merge_and_subsample(CFL_CONTEXT *const cfl, tran_low_t *const dst,
+    int dstride, const tran_low_t *const src, int sstride, int y_tx_size,
+    int uv_tx_size);
 
 #ifdef __cplusplus
 }  // extern "C"
