@@ -1680,7 +1680,7 @@ static void rd_pick_sb_modes(const AV1_COMP *const cpi, TileDataEnc *tile_data,
   x->pvq_coded = 0;
 #endif
 #if CONFIG_CFL
-  x->cfl_store_luma = 0;
+  x->cfl_store_y = 0;
 #endif
 
   set_offsets(cpi, tile_info, x, mi_row, mi_col, bsize);
@@ -4302,7 +4302,7 @@ static void rd_pick_partition(const AV1_COMP *const cpi, ThreadData *td,
   *rate_nocoef = best_rate_nocoef;
 #endif  // CONFIG_SUPERTX
 #if CONFIG_CFL
-  x->cfl_store_luma = 1;
+  x->cfl_store_y = 1;
 #endif
   if (best_rdc.rate < INT_MAX && best_rdc.dist < INT64_MAX &&
       pc_tree->index != 3) {
@@ -4315,7 +4315,7 @@ static void rd_pick_partition(const AV1_COMP *const cpi, ThreadData *td,
     }
   }
 #if CONFIG_CFL
-  x->cfl_store_luma = 0;
+  x->cfl_store_y = 0;
 #endif
 
   if (bsize == cm->sb_size) {
@@ -5346,21 +5346,18 @@ static void encode_superblock(const AV1_COMP *const cpi, ThreadData *td,
   x->pvq_speed = 0;
   x->pvq_coded = (dry_run == OUTPUT_ENABLED) ? 1 : 0;
 #endif
-#if CONFIG_CFL
-  if (x->pvq_coded) assert(x->extra_encode == 0);
-#endif
 
   if (!is_inter) {
     int plane;
     mbmi->skip = 1;
 #if CONFIG_CFL
     if (!x->pvq_coded)
-      x->cfl_store_luma = 1;
+      x->cfl_store_y = 1;
 #endif
     for (plane = 0; plane < MAX_MB_PLANE; ++plane)
       av1_encode_intra_block_plane((AV1_COMMON *)cm, x, block_size, plane, 1);
 #if CONFIG_CFL
-    x->cfl_store_luma = 0;
+    x->cfl_store_y = 0;
 #endif
     if (!dry_run)
       sum_intra_stats(td->counts, mi, xd->above_mi, xd->left_mi,

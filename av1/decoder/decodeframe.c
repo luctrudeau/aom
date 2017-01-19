@@ -501,10 +501,6 @@ static int av1_pvq_decode_helper2_cfl(MACROBLOCKD *const xd,
   if (plane != 0) {
     // Replace Intra prediction with CfL for ACs
     cfl_load_predictor(cfl, row, col, pvq_ref_coeff, tx_blk_size);
-    /*printf("[%d] tx %d Load (%d, %d): ", plane, tx_blk_size, row, col);
-    for (i = 0; i < tx_blk_size * tx_blk_size; i++)
-      printf("%d ", pvq_ref_coeff[i]);
-    pintf("\n");*/
   }
 
   if (ac_dc_coded) {
@@ -517,13 +513,6 @@ static int av1_pvq_decode_helper2_cfl(MACROBLOCKD *const xd,
   if (plane == 0) {
     cfl_store_predictor(cfl, row, col, tx_blk_size, pvq_ref_coeff, dqcoeff,
         ac_dc_coded);
-    /*printf("[%d] tx %d Store (%d, %d) ac_dc_coded %d: ", plane, tx_blk_size, row, col, ac_dc_coded);
-    for(j = 0; j < tx_blk_size; j++) {
-      for (i = 0; i < tx_blk_size; i++) {
-        printf("%d ", cfl->luma_coeff[MAX_SB_SIZE * j + i]);
-      }
-    }
-    printf("\n");*/
   }
 
   if (ac_dc_coded) {
@@ -620,13 +609,6 @@ static void predict_and_reconstruct_intra_block(AV1_COMMON *cm,
       // Store predicted Luma intra on block skip]q
       cfl_store_predictor(cfl, row, col, tx_blk_size, pd->pvq_ref_coeff,
           NULL,0);
-      /*printf("[%d] tx %d Store (%d, %d) ac_dc_coded %d: ", plane, tx_blk_size, row, col, -1);
-      for(j = 0; j < tx_blk_size; j++) {
-        for (i = 0; i < tx_blk_size; i++) {
-          printf("%d ", cfl->luma_coeff[MAX_SB_SIZE * j + i]);
-        }
-      }
-      printf("\n");*/
     }
 #else
     av1_pvq_decode_helper2(xd, mbmi, plane, row, col, tx_size, tx_type);

@@ -3049,25 +3049,15 @@ static int64_t rd_pick_intra_sby_mode(const AV1_COMP *const cpi, MACROBLOCK *x,
   }
 
 #if CONFIG_CFL
-// Encode one more time but with best Luma values
-
-  // set some magic flag!
-
-  // How about we start with this?
-//  super_block_yrd(cpi, x, &this_rd_stats, bsize, best_rd);
-
+{
   RD_STATS this_rd_stats;
-  int64_t tmp = INT64_MAX;
-  //printf("Les boys!\n");
-  x->cfl_store_luma = 1;
-  x->extra_encode = 1;
+  x->cfl_store_y = 1;
+  // Check that we instructing PVQ to encode
   assert(x->pvq_coded == 0);
-  txfm_rd_in_plane(x, cpi, &this_rd_stats, tmp, 0, bsize, mic->mbmi.tx_size,
-                   cpi->sf.use_fast_coef_costing);
-  x->extra_encode = 0;
-  x->cfl_store_luma = 0;
-  //printf("Je fais de la magie!\n");
- // assert(0);
+  txfm_rd_in_plane(x, cpi, &this_rd_stats, INT64_MAX, 0, bsize,
+      mic->mbmi.tx_size, cpi->sf.use_fast_coef_costing);
+  x->cfl_store_y = 0;
+}
 #endif
 
 #if CONFIG_PVQ
