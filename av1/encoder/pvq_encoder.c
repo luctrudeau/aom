@@ -956,13 +956,6 @@ int od_pvq_encode(daala_enc_ctx *enc,
     int encode_flip;
     /* Encode CFL flip bit just after the first time it's used. */
     encode_flip = pli != 0 && is_keyframe && theta[i] != -1 && !cfl_encoded;
-#if CONFIG_CFL
-    // Don't flip during RDO
-    // FIXME Support CfL in RDO
-    if (pvq_info) {
-      encode_flip &= pvq_info->coded;
-    }
-#endif
     if (i == 0 || (!skip_rest && !(skip_dir & (1 << ((i - 1)%3))))) {
       pvq_encode_partition(&enc->ec, qg[i], theta[i], max_theta[i], y + off[i],
        size[i], k[i], model, &enc->state.adapt, exg + i, ext + i,

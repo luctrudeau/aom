@@ -537,20 +537,18 @@ void av1_xform_quant(const AV1_COMMON *cm, MACROBLOCK *x, int plane, int block,
   int skip = 1;
   PVQ_INFO *pvq_info = NULL;
 
-  (void)scan_order;
-  (void)qcoeff;
-
 #if CONFIG_CFL
   CFL_CONTEXT *const cfl = xd->cfl;
   int ac_dc_coded = 0;
 #endif
 
+  (void)scan_order;
+  (void)qcoeff;
+
+
   if (x->pvq_coded) {
     assert(block < MAX_PVQ_BLOCKS_IN_SB);
     pvq_info = &x->pvq[block][plane];
-#if CONFIG_CFL
-    pvq_info->coded = 1;
-#endif
   }
   dst = &pd->dst.buf[(blk_row * dst_stride + blk_col) << tx_size_wide_log2[0]];
   src = &p->src.buf[(blk_row * src_stride + blk_col) << tx_size_wide_log2[0]];

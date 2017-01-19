@@ -85,9 +85,6 @@ typedef struct PVQ_INFO {
   tran_low_t dq_dc_residue;
 #if CONFIG_CFL
   int cfl_flip;
-  // This is a copy of the pvq_coded variable, because we need to know if we
-  // are in RDO or not in order to avoid performing CfL in RDO
-  int coded;
 #endif
 } PVQ_INFO;
 
