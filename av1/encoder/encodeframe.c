@@ -5346,12 +5346,22 @@ static void encode_superblock(const AV1_COMP *const cpi, ThreadData *td,
   x->pvq_speed = 0;
   x->pvq_coded = (dry_run == OUTPUT_ENABLED) ? 1 : 0;
 #endif
+#if CONFIG_CFL
+  if (x->pvq_coded) assert(x->extra_encode == 0);
+#endif
 
   if (!is_inter) {
     int plane;
     mbmi->skip = 1;
+#if CONFIG_CFL
+    if (!x->pvq_coded)
+      x->cfl_store_luma = 1;
+#endif
     for (plane = 0; plane < MAX_MB_PLANE; ++plane)
       av1_encode_intra_block_plane((AV1_COMMON *)cm, x, block_size, plane, 1);
+#if CONFIG_CFL
+    x->cfl_store_luma = 0;
+#endif
     if (!dry_run)
       sum_intra_stats(td->counts, mi, xd->above_mi, xd->left_mi,
                       frame_is_intra_only(cm));

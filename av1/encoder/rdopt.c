@@ -3058,12 +3058,15 @@ static int64_t rd_pick_intra_sby_mode(const AV1_COMP *const cpi, MACROBLOCK *x,
 
   RD_STATS this_rd_stats;
   int64_t tmp = INT64_MAX;
-  printf("Les boys!\n");
+  //printf("Les boys!\n");
   x->cfl_store_luma = 1;
+  x->extra_encode = 1;
+  assert(x->pvq_coded == 0);
   txfm_rd_in_plane(x, cpi, &this_rd_stats, tmp, 0, bsize, mic->mbmi.tx_size,
                    cpi->sf.use_fast_coef_costing);
+  x->extra_encode = 0;
   x->cfl_store_luma = 0;
-  printf("Je fais de la magie!\n");
+  //printf("Je fais de la magie!\n");
  // assert(0);
 #endif
 

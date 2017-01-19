@@ -207,6 +207,8 @@ struct macroblock {
 #endif
 #if CONFIG_CFL
   int cfl_store_luma;
+  int stored;
+  int extra_encode;
 #endif
 };
 

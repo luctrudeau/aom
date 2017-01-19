@@ -615,10 +615,20 @@ void av1_xform_quant(const AV1_COMMON *cm, MACROBLOCK *x, int plane, int block,
   if (!x->skip_block) {
 #if CONFIG_CFL
     assert(x->cfl_store_luma == 0 || x->cfl_store_luma == 1);
-    printf("[%d](%d, %d) Mode %d Size %d Store Luma %d PVQ_coded %d\n", plane, blk_row, blk_col, mbmi->mode, tx_blk_size,
-        x->cfl_store_luma, x->pvq_coded);
+    //printf("[%d](%d, %d) Mode %d Size %d Store Luma %d PVQ_coded %d\n", plane, blk_row, blk_col, mbmi->mode, tx_blk_size,
+    //    x->cfl_store_luma, x->pvq_coded);
     if (/*x->pvq_coded == 1 &&*/ plane != 0) {
+      assert(x->stored);
       cfl_load_predictor(cfl, blk_row, blk_col, ref_coeff, tx_blk_size);
+      if (x->pvq_coded == 1) {
+        //printf("[%d] tx %d Load (%d, %d): ", plane, tx_blk_size, blk_row, blk_col);
+        assert(x->stored == 2);
+        /*for (i = 0; i < tx_blk_size * tx_blk_size; i++)
+          printf("%d ", ref_coeff[i]);
+        printf("\n");*/
+      } else {
+        assert(x->stored == 1);
+      }
     }
 #endif
     int ac_dc_coded = av1_pvq_encode_helper(&x->daala_enc,
@@ -639,6 +649,18 @@ void av1_xform_quant(const AV1_COMMON *cm, MACROBLOCK *x, int plane, int block,
       if (x->pvq_coded == 1 || x->cfl_store_luma == 1) {
         cfl_store_predictor(cfl, blk_row, blk_col, tx_blk_size, ref_coeff,
             dqcoeff, ac_dc_coded);
+        x->stored = (x->pvq_coded)?2:1;
+        if (x->pvq_coded) {
+          //printf("[%d] tx %d Store (%d, %d) ac_dc %d: ", plane, tx_blk_size, blk_row, blk_col, ac_dc_coded);
+          /*for(j = 0; j < tx_blk_size; j++) {
+            for (i = 0; i < tx_blk_size; i++) {
+              printf("%d ", cfl->luma_coeff[MAX_SB_SIZE * j + i]);
+            }
+          }
+          printf("\n");*/
+        }
+      } else {
+        x->stored = 0;
       }
     }
   } else {
@@ -646,6 +668,18 @@ void av1_xform_quant(const AV1_COMMON *cm, MACROBLOCK *x, int plane, int block,
       if (x->pvq_coded == 1 || x->cfl_store_luma == 1) {
         cfl_store_predictor(cfl, blk_row, blk_col, tx_blk_size, ref_coeff,
             NULL, 0);
+        x->stored = (x->pvq_coded)?2:1;
+        //printf("[%d] tx %d Store (%d, %d) ac_dc %d: ", plane, tx_blk_size, blk_row, blk_col, -1);
+        if (x->pvq_coded) {
+          /*for(j = 0; j < tx_blk_size; j++) {
+            for (i = 0; i < tx_blk_size; i++) {
+              printf("%d ", cfl->luma_coeff[MAX_SB_SIZE * j + i]);
+            }
+          }
+          printf("\n");*/
+        }
+      } else {
+        x->stored = 0;
       }
     }
 #endif
