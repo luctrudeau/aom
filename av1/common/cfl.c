@@ -88,11 +88,12 @@ void cfl_load_predictor(CFL_CONTEXT *const cfl, int blk_row, int blk_col,
   assert(y_tx_size > 0 && y_tx_size <= MAX_TX_SIZE);
   assert(uv_tx_size > 0 && uv_tx_size <= MAX_TX_SIZE);
 
-  // Adjusting row and cols for 4:2:0
-  blk_row *= 2;
-  blk_col *= 2;
+  // Adjusting row and cols for 4:2:0. It is important to note that the
+  // prediction is always the first AC coeffs (not the collocated coeffs).
+  blk_row = (blk_row * scale * 2) / y_tx_size * y_tx_size;
+  blk_col = (blk_col * scale * 2) / y_tx_size * y_tx_size;
 
-  coeff_offset = scale * blk_row * MAX_SB_SIZE + (scale * blk_col);
+  coeff_offset = blk_row * MAX_SB_SIZE + (blk_col);
 
   // Check that the last coeff offset is smaller than the max superblock size
   assert(coeff_offset
@@ -120,7 +121,8 @@ void cfl_load_predictor(CFL_CONTEXT *const cfl, int blk_row, int blk_col,
       }
     }
   } else {
-    tf_merge_and_subsample(cfl, ref_coeff, uv_tx_size, y_coeff, MAX_SB_SIZE, y_tx_size, uv_tx_size);
+    tf_merge_and_subsample(cfl, ref_coeff, uv_tx_size, y_coeff, MAX_SB_SIZE,
+        y_tx_size, uv_tx_size);
   }
   // CfL does not apply to dc (only ac)
   ref_coeff[0] = dc;
