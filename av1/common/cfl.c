@@ -151,6 +151,12 @@ void cfl_store_predictor(CFL_CONTEXT *const cfl, int blk_row, int blk_col,
     // transform size. We assume that Luma transform size is constant inside a
     // partition.
     cfl->luma_tx_blk_size = tx_blk_size;
+
+    if (luma_coeff == cfl->luma_coeff) {
+      // Zero out luma_coeff on first store. This is important as frame
+      // boundary situations can cause reading from stale memory.
+      memset(luma_coeff, 0, sizeof(tran_low_t) * MAX_SB_SQUARE);
+    }
   }
 
   // Check that the last coeff offset is smaller than the max superblock size
