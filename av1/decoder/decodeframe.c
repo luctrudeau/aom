@@ -457,7 +457,13 @@ static int av1_pvq_decode_helper2(AV1_COMMON *cm, MACROBLOCKD *const xd,
     fwd_txfm_param.tx_size = tx_size;
     fwd_txfm_param.lossless = xd->lossless[seg_id];
 
-    fwd_txfm(pred, pvq_ref_coeff, diff_stride, &fwd_txfm_param);
+    if (mbmi->mode == DC_PRED && mbmi->tx_type == DCT_DCT) {
+      memset(pvq_ref_coeff, 0, sizeof(tran_low_t) * tx_blk_size * tx_blk_size);
+      pvq_ref_coeff[0] = pred[0] * tx_blk_size << (3 - get_tx_scale(tx_size));
+    } else {
+      fwd_txfm(pred, pvq_ref_coeff, diff_stride, &fwd_txfm_param);
+    }
+
 
     quant = &pd->seg_dequant[seg_id][0];  // aom's quantizer
 

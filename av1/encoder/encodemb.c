@@ -607,7 +607,12 @@ void av1_xform_quant(const AV1_COMMON *cm, MACROBLOCK *x, int plane, int block,
 
   (void)xform_quant_idx;
   fwd_txfm(src_int16, coeff, diff_stride, &fwd_txfm_param);
-  fwd_txfm(pred, ref_coeff, diff_stride, &fwd_txfm_param);
+  if (mbmi->mode == DC_PRED && mbmi->tx_type == DCT_DCT) {
+    memset(ref_coeff, 0, sizeof(tran_low_t) * tx_blk_size * tx_blk_size);
+    ref_coeff[0] = pred[0] * tx_blk_size << (3 - get_tx_scale(tx_size));
+  } else {
+    fwd_txfm(pred, ref_coeff, diff_stride, &fwd_txfm_param);
+  }
 
   // PVQ for inter mode block
   if (!x->skip_block) {
