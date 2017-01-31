@@ -1963,6 +1963,7 @@ void av1_fht16x16_c(const int16_t *input, tran_low_t *output, int stride,
   tran_low_t out[256];
   int i, j;
   tran_low_t temp_in[16], temp_out[16];
+  int dc = 0;
 
 #if CONFIG_EXT_TX
   int16_t flipped_input[16 * 16];
@@ -1971,7 +1972,10 @@ void av1_fht16x16_c(const int16_t *input, tran_low_t *output, int stride,
 
   // Columns
   for (i = 0; i < 16; ++i) {
-    for (j = 0; j < 16; ++j) temp_in[j] = input[j * stride + i] * 4;
+    for (j = 0; j < 16; ++j) {
+      temp_in[j] = input[j * stride + i] * 4;
+      dc += input[j * stride + i];
+    }
     ht.cols(temp_in, temp_out);
     for (j = 0; j < 16; ++j)
       out[j * 16 + i] = (temp_out[j] + 1 + (temp_out[j] < 0)) >> 2;
@@ -1982,6 +1986,9 @@ void av1_fht16x16_c(const int16_t *input, tran_low_t *output, int stride,
     for (j = 0; j < 16; ++j) temp_in[j] = out[j + i * 16];
     ht.rows(temp_in, temp_out);
     for (j = 0; j < 16; ++j) output[j + i * 16] = temp_out[j];
+  }
+  if (tx_type == DCT_DCT) {
+    output[0] = dc >> 1;
   }
 }
 
@@ -2083,6 +2090,7 @@ void av1_fht32x32_c(const int16_t *input, tran_low_t *output, int stride,
   tran_low_t out[1024];
   int i, j;
   tran_low_t temp_in[32], temp_out[32];
+  int dc = 0;
 
 #if CONFIG_EXT_TX
   int16_t flipped_input[32 * 32];
@@ -2091,7 +2099,10 @@ void av1_fht32x32_c(const int16_t *input, tran_low_t *output, int stride,
 
   // Columns
   for (i = 0; i < 32; ++i) {
-    for (j = 0; j < 32; ++j) temp_in[j] = input[j * stride + i] * 4;
+    for (j = 0; j < 32; ++j) {
+      temp_in[j] = input[j * stride + i] * 4;
+      dc += input[j * stride + i];
+    }
     ht.cols(temp_in, temp_out);
     for (j = 0; j < 32; ++j)
       out[j * 32 + i] = ROUND_POWER_OF_TWO_SIGNED(temp_out[j], 4);
@@ -2102,6 +2113,9 @@ void av1_fht32x32_c(const int16_t *input, tran_low_t *output, int stride,
     for (j = 0; j < 32; ++j) temp_in[j] = out[j + i * 32];
     ht.rows(temp_in, temp_out);
     for (j = 0; j < 32; ++j) output[j + i * 32] = temp_out[j];
+  }
+  if (tx_type == DCT_DCT) {
+    output[0] = dc >> 3;
   }
 }
 

@@ -25,6 +25,8 @@ void aom_fdct4x4_c(const int16_t *input, tran_low_t *output, int stride) {
   tran_low_t intermediate[4 * 4];
   const tran_low_t *in_low = NULL;
   tran_low_t *out = intermediate;
+  // Compute DC standalone (reduces rounding error).
+  tran_high_t dc = 0;
   // Do the two transform/transpose passes
   for (pass = 0; pass < 2; ++pass) {
     tran_high_t in_high[4];    // canbe16
@@ -38,9 +40,8 @@ void aom_fdct4x4_c(const int16_t *input, tran_low_t *output, int stride) {
         in_high[1] = input[1 * stride] * 16;
         in_high[2] = input[2 * stride] * 16;
         in_high[3] = input[3 * stride] * 16;
-        if (i == 0 && in_high[0]) {
-          ++in_high[0];
-        }
+        dc += input[0 * stride] + input[1 * stride] + input[2 * stride]
+          + input[3 * stride];
       } else {
         assert(in_low != NULL);
         in_high[0] = in_low[0 * 4];
@@ -77,6 +78,9 @@ void aom_fdct4x4_c(const int16_t *input, tran_low_t *output, int stride) {
       for (j = 0; j < 4; ++j) output[j + i * 4] = (output[j + i * 4] + 1) >> 2;
     }
   }
+  // Apply DC scale factor should be << 2 but is << 1
+  // because [(1/sqrt(2))^2 = 1/2]
+  output[0] = dc << 1;
 }
 
 void aom_fdct4x4_1_c(const int16_t *input, tran_low_t *output, int stride) {
@@ -94,6 +98,8 @@ void aom_fdct8x8_c(const int16_t *input, tran_low_t *final_output, int stride) {
   int pass;
   tran_low_t *output = intermediate;
   const tran_low_t *in = NULL;
+  // Compute DC standalone (reduces rounding error).
+  tran_high_t dc = 0;
 
   // Transform columns
   for (pass = 0; pass < 2; ++pass) {
@@ -113,6 +119,7 @@ void aom_fdct8x8_c(const int16_t *input, tran_low_t *final_output, int stride) {
         s6 = (input[1 * stride] - input[6 * stride]) * 4;
         s7 = (input[0 * stride] - input[7 * stride]) * 4;
         ++input;
+        dc += s0 + s1 + s2 + s3;
       } else {
         s0 = in[0 * 8] + in[7 * 8];
         s1 = in[1 * 8] + in[6 * 8];
@@ -166,6 +173,8 @@ void aom_fdct8x8_c(const int16_t *input, tran_low_t *final_output, int stride) {
     output = final_output;
   }
 
+  // Apply DC scale factor [(1/sqrt(2))^2 = 1/2]
+  final_output[0] = dc >> 1;
   // Rows
   for (i = 0; i < 8; ++i) {
     for (j = 0; j < 8; ++j) final_output[j + i * 8] /= 2;
@@ -193,6 +202,8 @@ void aom_fdct16x16_c(const int16_t *input, tran_low_t *output, int stride) {
   tran_low_t intermediate[256];
   const tran_low_t *in_low = NULL;
   tran_low_t *out = intermediate;
+  // Compute DC standalone (reduces rounding error).
+  tran_high_t dc = 0;
   // Do the two transform/transpose passes
   for (pass = 0; pass < 2; ++pass) {
     tran_high_t step1[8];      // canbe16
@@ -212,6 +223,8 @@ void aom_fdct16x16_c(const int16_t *input, tran_low_t *output, int stride) {
         in_high[5] = (input[5 * stride] + input[10 * stride]) * 4;
         in_high[6] = (input[6 * stride] + input[9 * stride]) * 4;
         in_high[7] = (input[7 * stride] + input[8 * stride]) * 4;
+        dc += in_high[0] + in_high[1] + in_high[2] + in_high[3] + in_high[4]
+          + in_high[5] + in_high[6] + in_high[7];
         // Calculate input for the next 8 results.
         step1[0] = (input[7 * stride] - input[8 * stride]) * 4;
         step1[1] = (input[6 * stride] - input[9 * stride]) * 4;
@@ -359,6 +372,8 @@ void aom_fdct16x16_c(const int16_t *input, tran_low_t *output, int stride) {
     in_low = intermediate;
     out = output;
   }
+  // Apply DC scale factor [(1/sqrt(2))^2 = 1/2]
+  output[0] = dc >> 1;
 }
 
 void aom_fdct16x16_1_c(const int16_t *input, tran_low_t *output, int stride) {
