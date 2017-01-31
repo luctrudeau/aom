@@ -40,6 +40,9 @@ void aom_fdct4x4_c(const int16_t *input, tran_low_t *output, int stride) {
         in_high[1] = input[1 * stride] * 16;
         in_high[2] = input[2 * stride] * 16;
         in_high[3] = input[3 * stride] * 16;
+        if (i == 0 && in_high[0]) {
+          ++in_high[0];
+        }
         dc += input[0 * stride] + input[1 * stride] + input[2 * stride]
           + input[3 * stride];
       } else {
