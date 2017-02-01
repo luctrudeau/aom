@@ -11,6 +11,9 @@
 
 #include "av1/common/cfl.h"
 
+#include "av1/common/idct.h"
+#include "av1/encoder/hybrid_fwd_txfm.h"
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <assert.h>
@@ -182,6 +185,35 @@ void cfl_store_predictor(CFL_CONTEXT *const cfl, int blk_row, int blk_col,
     default:
       fprintf(stderr, "AC_DC_CODED value %d is > 3\n", ac_dc_coded);
       assert(0);
+  }
+
+  if (tx_type != DCT_DCT) {
+    INV_TXFM_PARAM inv_txfm_param;
+    FWD_TXFM_PARAM fwd_txfm_param;
+
+    // Perform the inverse transform
+    inv_txfm_param.tx_type = tx_type;
+    inv_txfm_param.tx_size = tx_size;
+    // FIXME
+    inv_txfm_param.eob = tx_blk_size * tx_blk_size;
+    // FIXME Zero for now!
+    inv_txfm_param.lossless = 0;
+    memset(cfl->buf_idct_uint8, 0, sizeof(uint8_t) * MAX_SB_SQUARE);
+    inv_txfm_add(src, cfl->buf_idct_uint8, tx_blk_size, &inv_txfm_param);
+
+    for (i = 0; i < tx_blk_size * tx_blk_size; i++) {
+      cfl->buf_idct_uint16[i] = cfl->buf_idct_uint8[i];
+    }
+
+    // Forward transform to DCT_DCT
+    fwd_txfm_param.tx_type = DCT_DCT;
+    fwd_txfm_param.tx_size = tx_size;
+    fwd_txfm_param.fwd_txfm_opt = FWD_TXFM_OPT_NORMAL;
+    fwd_txfm_param.rd_transform = 0;
+    // FIXME Zero for now!
+    fwd_txfm_param.lossless = 0;
+    fwd_txfm(cfl->buf_idct_uint16, cfl->buf_fdct, tx_blk_size, &fwd_txfm_param);
+    src = cfl->buf_fdct;
   }
 
   for (j = 0; j < tx_blk_size; j++) {
