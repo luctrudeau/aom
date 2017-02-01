@@ -79,19 +79,19 @@ void cfl_load_predictor(CFL_CONTEXT *const cfl, int blk_row, int blk_col,
 		tran_low_t *const ref_coeff, int uv_tx_size) {
 
   const int scale = 4; // Needs to be adjusted to support 4:4:4
-  const int y_tx_size = cfl->luma_tx_blk_size;
+  const int y_tx_blk_size = tx_size_wide[cfl->y_tx_size];
   const tran_low_t *y_coeff;
   const tran_low_t dc = ref_coeff[0];
   int coeff_offset;
 
   // Check that tx_sizes are valid.
-  assert(y_tx_size > 0 && y_tx_size <= MAX_TX_SIZE);
+  assert(y_tx_blk_size > 0 && y_tx_blk_size <= MAX_TX_SIZE);
   assert(uv_tx_size > 0 && uv_tx_size <= MAX_TX_SIZE);
 
   // Adjusting row and cols for 4:2:0. It is important to note that the
   // prediction is always the first AC coeffs (not the collocated coeffs).
-  blk_row = (blk_row * scale * 2) / y_tx_size * y_tx_size;
-  blk_col = (blk_col * scale * 2) / y_tx_size * y_tx_size;
+  blk_row = (blk_row * scale * 2) / y_tx_blk_size * y_tx_blk_size;
+  blk_col = (blk_col * scale * 2) / y_tx_blk_size * y_tx_blk_size;
 
   coeff_offset = blk_row * MAX_SB_SIZE + (blk_col);
 
@@ -99,12 +99,12 @@ void cfl_load_predictor(CFL_CONTEXT *const cfl, int blk_row, int blk_col,
   assert(coeff_offset
       + ((uv_tx_size-1) * MAX_SB_SIZE + (uv_tx_size-1)) < MAX_SB_SQUARE);
 
-  y_coeff = &cfl->luma_coeff[coeff_offset];
+  y_coeff = &cfl->y_coeff[coeff_offset];
 
-  if (y_tx_size > uv_tx_size) {
+  if (y_tx_blk_size > uv_tx_size) {
     // When the CfL prediction is bigger than what is needed, we only take the
     // part that is needed.
-    int shift = (y_tx_size / uv_tx_size) >> 1;
+    int shift = (y_tx_blk_size / uv_tx_size) >> 1;
     int i, j, k = 0;
 
     // 1 and 2 are the only scale changes supported for now.
@@ -122,7 +122,7 @@ void cfl_load_predictor(CFL_CONTEXT *const cfl, int blk_row, int blk_col,
     }
   } else {
     tf_merge_and_subsample(cfl, ref_coeff, uv_tx_size, y_coeff, MAX_SB_SIZE,
-        y_tx_size, uv_tx_size);
+        y_tx_blk_size, uv_tx_size);
   }
   // CfL does not apply to dc (only ac)
   ref_coeff[0] = dc;
@@ -134,31 +134,32 @@ void cfl_load_predictor(CFL_CONTEXT *const cfl, int blk_row, int blk_col,
  *  * If the AC values are skipped, the intra luma prediction is used.
  */
 void cfl_store_predictor(CFL_CONTEXT *const cfl, int blk_row, int blk_col,
-		int tx_blk_size, const TX_TYPE tx_type,
+		int tx_size, const TX_TYPE tx_type,
                 const tran_low_t *const ref_coeff,
                 const tran_low_t *const dqcoeff, int ac_dc_coded){
 
   const int scale = 4; // Needs to be adjusted to support 4:4:4
   const int coeff_offset = scale * blk_row * MAX_SB_SIZE + (scale * blk_col);
   const tran_low_t *src;
-  tran_low_t *const luma_coeff = &cfl->luma_coeff[coeff_offset];
+  tran_low_t *const y_coeff = &cfl->y_coeff[coeff_offset];
+  const int tx_blk_size = tx_size_wide[tx_size];
   int i,j,k = 0;
 
   if (blk_row != 0 || blk_col != 0) {
     // Check that all luma parts are the same size and use the same transform
-    assert(cfl->luma_tx_blk_size == tx_blk_size);
-    assert(cfl->luma_tx_type == tx_type);
+    assert(cfl->y_tx_size == tx_size);
+    assert(cfl->y_tx_type == tx_type);
   } else {
     // We store the Luma transform size and transform type as they may differ
     // from that of Chroma. We assume that the Luma transform size and
     // transform type are constant inside a given partition.
-    cfl->luma_tx_blk_size = tx_blk_size;
-    cfl->luma_tx_type = tx_type;
+    cfl->y_tx_size = tx_size;
+    cfl->y_tx_type = tx_type;
 
-    if (luma_coeff == cfl->luma_coeff) {
+    if (y_coeff == cfl->y_coeff) {
       // Zero out luma_coeff on first store. This is important as frame
       // boundary situations can cause reading from stale memory.
-      memset(luma_coeff, 0, sizeof(tran_low_t) * MAX_SB_SQUARE);
+      memset(y_coeff, 0, sizeof(tran_low_t) * MAX_SB_SQUARE);
     }
   }
 
@@ -185,7 +186,7 @@ void cfl_store_predictor(CFL_CONTEXT *const cfl, int blk_row, int blk_col,
 
   for (j = 0; j < tx_blk_size; j++) {
     for (i = 0; i < tx_blk_size; i++) {
-      luma_coeff[j * MAX_SB_SIZE + i] = src[k++];
+      y_coeff[j * MAX_SB_SIZE + i] = src[k++];
     }
   }
 }

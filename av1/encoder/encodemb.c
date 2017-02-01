@@ -640,7 +640,7 @@ void av1_xform_quant(const AV1_COMMON *cm, MACROBLOCK *x, int plane, int block,
 #if CONFIG_CFL
   if (plane == 0) {
     if (x->pvq_coded == 1 || x->cfl_store_y == 1) {
-      cfl_store_predictor(cfl, blk_row, blk_col, tx_blk_size, tx_type,
+      cfl_store_predictor(cfl, blk_row, blk_col, tx_size, tx_type,
           ref_coeff, dqcoeff, ac_dc_coded);
       x->cfl_stored_y = (x->pvq_coded) ? 2 : 1;
     } else {

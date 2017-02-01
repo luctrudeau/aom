@@ -28,15 +28,20 @@ typedef struct cfl_context {
 
   /* Transform size can differ between Luma and Chroma. We store Luma in order
    * to properly perform CfL. */
-  int luma_tx_blk_size;
-  TX_TYPE luma_tx_type;
+  int y_tx_size;
+  TX_TYPE y_tx_type;
 
   /* Dequantized transformed coefficients of Luma used to predict Chroma.*/
-  DECLARE_ALIGNED(16, tran_low_t, luma_coeff[MAX_SB_SQUARE]);
+  DECLARE_ALIGNED(16, tran_low_t, y_coeff[MAX_SB_SQUARE]);
 
   // Double buffer system used by TF merge.
   // It's located in cfl_context to avoid collisions between threads.
   tran_high_t buf1[MAX_SB_SQUARE], buf2[MAX_SB_SQUARE];
+
+  // ADST buffers
+  uint8_t buf_idct_uint8[MAX_SB_SQUARE];
+  tran_low_t buf_idct_uint16[MAX_SB_SQUARE];
+  tran_low_t buf_fdct[MAX_SB_SQUARE];
 } CFL_CONTEXT;
 
 
