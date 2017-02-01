@@ -1184,9 +1184,6 @@ static void write_tx_type(const AV1_COMMON *const cm,
 #else
   const TX_SIZE tx_size = mbmi->tx_size;
 #endif
-#if CONFIG_DCT_ONLY
-  assert(mbmi->tx_type == DCT_DCT);
-#endif
   if (!FIXED_TX_TYPE) {
 #if CONFIG_EXT_TX
     const BLOCK_SIZE bsize = mbmi->sb_type;

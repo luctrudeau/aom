@@ -488,7 +488,7 @@ static int av1_pvq_decode_helper2_cfl(MACROBLOCKD *const xd,
     }
 
 #if CONFIG_DCT_ONLY
-  assert(tx_type == DCT_DCT);
+  if (plane != 0) assert(tx_type == DCT_DCT);
 #endif
   fwd_txfm_param.tx_type = tx_type;
   fwd_txfm_param.tx_size = tx_size;

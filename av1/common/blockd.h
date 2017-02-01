@@ -756,7 +756,7 @@ static INLINE TX_TYPE get_default_tx_type(PLANE_TYPE plane_type,
   const MB_MODE_INFO *const mbmi = &xd->mi[0]->mbmi;
 
 #if CONFIG_DCT_ONLY
-  return DCT_DCT;
+  if (plane_type != PLANE_TYPE_Y) return DCT_DCT;
 #endif
   if (is_inter_block(mbmi) || plane_type != PLANE_TYPE_Y ||
       xd->lossless[mbmi->segment_id] || tx_size >= TX_32X32)
@@ -773,7 +773,7 @@ static INLINE TX_TYPE get_tx_type(PLANE_TYPE plane_type, const MACROBLOCKD *xd,
   const MB_MODE_INFO *const mbmi = &mi->mbmi;
 
 #if CONFIG_DCT_ONLY
-  return DCT_DCT;
+  if (plane_type != PLANE_TYPE_Y) return DCT_DCT;
 #endif
   if (FIXED_TX_TYPE)
     return get_default_tx_type(plane_type, xd, block_idx, tx_size);

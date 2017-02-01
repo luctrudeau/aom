@@ -570,7 +570,7 @@ void av1_xform_quant(const AV1_COMMON *cm, MACROBLOCK *x, int plane, int block,
   (void)ctx;
 
 #if CONFIG_DCT_ONLY
-    assert(tx_type == DCT_DCT);
+  if (plane != 0) assert(tx_type == DCT_DCT);
 #endif
   fwd_txfm_param.tx_type = tx_type;
   fwd_txfm_param.tx_size = tx_size;
