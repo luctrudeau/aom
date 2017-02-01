@@ -29,6 +29,7 @@ typedef struct cfl_context {
   /* Transform size can differ between Luma and Chroma. We store Luma in order
    * to properly perform CfL. */
   int luma_tx_blk_size;
+  TX_TYPE luma_tx_type;
 
   /* Dequantized transformed coefficients of Luma used to predict Chroma.*/
   DECLARE_ALIGNED(16, tran_low_t, luma_coeff[MAX_SB_SQUARE]);
@@ -43,7 +44,8 @@ void cfl_load_predictor(CFL_CONTEXT *const cfl, int blk_row, int blk_col,
 		tran_low_t *const ref_coeff, int tx_blk_size);
 
 void cfl_store_predictor(CFL_CONTEXT *const cfl, int blk_row, int blk_col,
-		int tx_blk_size, const tran_low_t *const ref_coeff,
+		int tx_blk_size, const TX_TYPE tx_type,
+                const tran_low_t *const ref_coeff,
 		const tran_low_t *const dqcoeff, int ac_dc_coded);
 
 

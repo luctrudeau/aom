@@ -511,8 +511,8 @@ static int av1_pvq_decode_helper2_cfl(MACROBLOCKD *const xd,
   }
 
   if (plane == 0) {
-    cfl_store_predictor(cfl, row, col, tx_blk_size, pvq_ref_coeff, dqcoeff,
-        ac_dc_coded);
+    cfl_store_predictor(cfl, row, col, tx_blk_size, tx_type, pvq_ref_coeff,
+        dqcoeff, ac_dc_coded);
   }
 
   if (ac_dc_coded) {
@@ -607,8 +607,8 @@ static void predict_and_reconstruct_intra_block(AV1_COMMON *cm,
       // zero ACs outperforms storing the luma intra prediction
 
       // Store predicted Luma intra on block skip]q
-      cfl_store_predictor(cfl, row, col, tx_blk_size, pd->pvq_ref_coeff,
-          NULL,0);
+      cfl_store_predictor(cfl, row, col, tx_blk_size, tx_type,
+          pd->pvq_ref_coeff, NULL,0);
     }
 #else
     av1_pvq_decode_helper2(xd, mbmi, plane, row, col, tx_size, tx_type);

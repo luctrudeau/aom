@@ -134,8 +134,9 @@ void cfl_load_predictor(CFL_CONTEXT *const cfl, int blk_row, int blk_col,
  *  * If the AC values are skipped, the intra luma prediction is used.
  */
 void cfl_store_predictor(CFL_CONTEXT *const cfl, int blk_row, int blk_col,
-		int tx_blk_size, const tran_low_t *const ref_coeff,
-		const tran_low_t *const dqcoeff, int ac_dc_coded) {
+		int tx_blk_size, const TX_TYPE tx_type,
+                const tran_low_t *const ref_coeff,
+                const tran_low_t *const dqcoeff, int ac_dc_coded){
 
   const int scale = 4; // Needs to be adjusted to support 4:4:4
   const int coeff_offset = scale * blk_row * MAX_SB_SIZE + (scale * blk_col);
@@ -144,13 +145,15 @@ void cfl_store_predictor(CFL_CONTEXT *const cfl, int blk_row, int blk_col,
   int i,j,k = 0;
 
   if (blk_row != 0 || blk_col != 0) {
-    // Check that all luma parts are the same size
+    // Check that all luma parts are the same size and use the same transform
     assert(cfl->luma_tx_blk_size == tx_blk_size);
+    assert(cfl->luma_tx_type == tx_type);
   } else {
-    // We store the Luma transform size as it can differ from the chroma
-    // transform size. We assume that Luma transform size is constant inside a
-    // partition.
+    // We store the Luma transform size and transform type as they may differ
+    // from that of Chroma. We assume that the Luma transform size and
+    // transform type are constant inside a given partition.
     cfl->luma_tx_blk_size = tx_blk_size;
+    cfl->luma_tx_type = tx_type;
 
     if (luma_coeff == cfl->luma_coeff) {
       // Zero out luma_coeff on first store. This is important as frame
