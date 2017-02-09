@@ -796,6 +796,9 @@ int av1_is_intra_filter_switchable(int angle);
 static INLINE TX_TYPE get_default_tx_type(PLANE_TYPE plane_type,
                                           const MACROBLOCKD *xd, int block_idx,
                                           TX_SIZE tx_size) {
+#if CONFIG_LIMIT_4X4
+  return DCT_DCT;
+#endif
   const MB_MODE_INFO *const mbmi = &xd->mi[0]->mbmi;
 
   if (is_inter_block(mbmi) || plane_type != PLANE_TYPE_Y ||
@@ -809,6 +812,9 @@ static INLINE TX_TYPE get_default_tx_type(PLANE_TYPE plane_type,
 
 static INLINE TX_TYPE get_tx_type(PLANE_TYPE plane_type, const MACROBLOCKD *xd,
                                   int block_idx, TX_SIZE tx_size) {
+#if CONFIG_LIMIT_4X4
+  return DCT_DCT;
+#endif
   const MODE_INFO *const mi = xd->mi[0];
   const MB_MODE_INFO *const mbmi = &mi->mbmi;
 

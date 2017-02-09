@@ -436,6 +436,9 @@ static TX_SIZE read_tx_size(AV1_COMMON *cm, MACROBLOCKD *xd, int is_inter,
       }
 #else
       assert(coded_tx_size <= max_txsize_lookup[bsize]);
+#if CONFIG_LIMIT_4X4
+      assert(coded_tx_size == TX_4X4);
+#endif
 #endif  // CONFIG_EXT_TX && CONFIG_RECT_TX
       return coded_tx_size;
     } else {
@@ -800,6 +803,9 @@ static void read_tx_type(const AV1_COMMON *const cm, MACROBLOCKD *xd,
     }
 #endif  // CONFIG_EXT_TX
   }
+#if CONFIG_LIMIT_4X4
+  assert(mbmi->tx_type == DCT_DCT);
+#endif
 }
 
 static void read_intra_frame_mode_info(AV1_COMMON *const cm,

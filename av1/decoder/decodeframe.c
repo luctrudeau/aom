@@ -461,6 +461,10 @@ static int av1_pvq_decode_helper2(AV1_COMMON *cm, MACROBLOCKD *const xd,
       for (i = 0; i < tx_blk_size; i++) {
         pred[diff_stride * j + i] = dst[pd->dst.stride * j + i];
       }
+#if CONFIG_DAALA_DCT
+    assert(tx_size == TX_4X4);
+    assert(tx_type == DCT_DCT);
+#endif
 
     fwd_txfm_param.tx_type = tx_type;
     fwd_txfm_param.tx_size = tx_size;
@@ -508,7 +512,10 @@ static void predict_and_reconstruct_intra_block(
   av1_predict_intra_block(xd, pd->width, pd->height, txsize_to_bsize[tx_size],
                           mode, dst, pd->dst.stride, dst, pd->dst.stride, col,
                           row, plane);
-
+#if CONFIG_LIMIT_4X4
+  assert(mbmi->tx_type == DCT_DCT);
+  assert(mbmi->tx_size == TX_4X4);
+#endif
   if (!mbmi->skip) {
     TX_TYPE tx_type = get_tx_type(plane_type, xd, block_idx, tx_size);
 #if !CONFIG_PVQ
