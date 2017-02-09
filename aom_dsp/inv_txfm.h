@@ -122,6 +122,18 @@ static INLINE uint8_t clip_pixel_add(uint8_t dest, tran_high_t trans) {
   trans = WRAPLOW(trans);
   return clip_pixel(dest + (int)trans);
 }
+
+#if CONFIG_DAALA_DCT
+
+# define OD_UNBIASED_RSHIFT32(_a, _b) \
+  (((int32_t)(((uint32_t)(_a) >> (32 - (_b))) + (_a))) >> (_b))
+
+# define OD_DCT_RSHIFT(_a, _b) OD_UNBIASED_RSHIFT32(_a, _b)
+/*This is the strength reduced version of ((_a)/(1 << (_b))).
+  This will not work for _b == 0, however currently this is only used for
+  b == 1 anyway.*/
+#endif
+
 #ifdef __cplusplus
 }  // extern "C"
 #endif

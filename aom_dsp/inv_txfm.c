@@ -94,6 +94,28 @@ void aom_iwht4x4_1_add_c(const tran_low_t *in, uint8_t *dest, int dest_stride) {
 }
 
 void aom_idct4_c(const tran_low_t *input, tran_low_t *output) {
+#if CONFIG_DAALA_DCT
+  int t0;
+  int t1;
+  int t2;
+  int t2h;
+  int t3;
+  t0 = input[0];
+  t1 = input[1];
+  t2 = input[2];
+  t3 = input[3];
+  t3 += (t1*18293 + 8192) >> 14;
+  t1 -= (t3*21407 + 16384) >> 15;
+  t3 += (t1*23013 + 16384) >> 15;
+  t2 = t0 - t2;
+  t2h = OD_DCT_RSHIFT(t2, 1);
+  t0 -= t2h - OD_DCT_RSHIFT(t3, 1);
+  t1 = t2h - t1;
+  output[0] = (tran_low_t)t0;
+  output[1] = (tran_low_t)(t2 - t1);
+  output[2] = (tran_low_t)t1;
+  output[3] = (tran_low_t)(t0 - t3);
+#else
   tran_low_t step[4];
   tran_high_t temp1, temp2;
   // stage 1
@@ -111,6 +133,7 @@ void aom_idct4_c(const tran_low_t *input, tran_low_t *output) {
   output[1] = WRAPLOW(step[1] + step[2]);
   output[2] = WRAPLOW(step[1] - step[2]);
   output[3] = WRAPLOW(step[0] - step[3]);
+#endif
 }
 
 void aom_idct4x4_16_add_c(const tran_low_t *input, uint8_t *dest, int stride) {
@@ -132,7 +155,7 @@ void aom_idct4x4_16_add_c(const tran_low_t *input, uint8_t *dest, int stride) {
     aom_idct4_c(temp_in, temp_out);
     for (j = 0; j < 4; ++j) {
       dest[j * stride + i] = clip_pixel_add(dest[j * stride + i],
-                                            ROUND_POWER_OF_TWO(temp_out[j], 4));
+          ROUND_POWER_OF_TWO(temp_out[j], DCT_COEFF_PRE_SHIFT));
     }
   }
 }
