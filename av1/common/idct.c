@@ -1337,13 +1337,21 @@ void av1_inv_txfm_add_4x4(const tran_low_t *input, uint8_t *dest, int stride,
     case DCT_DCT: av1_idct4x4_add(input, dest, stride, eob); break;
     case ADST_DCT:
     case DCT_ADST:
+#if CONFIG_DAALA_DCT
+    case ADST_ADST: av1_iht4x4_16_add_c(input, dest, stride, tx_type); break;
+#else
     case ADST_ADST: av1_iht4x4_16_add(input, dest, stride, tx_type); break;
+#endif
 #if CONFIG_EXT_TX
     case FLIPADST_DCT:
     case DCT_FLIPADST:
     case FLIPADST_FLIPADST:
     case ADST_FLIPADST:
+#if CONFIG_DAALA_DCT
+    case FLIPADST_ADST: av1_iht4x4_16_add_c(input, dest, stride, tx_type); break;
+#else
     case FLIPADST_ADST: av1_iht4x4_16_add(input, dest, stride, tx_type); break;
+#endif
     case V_DCT:
     case H_DCT:
     case V_ADST:

@@ -1141,9 +1141,11 @@ static void maybe_flip_input(const int16_t **src, int *src_stride, int l, int w,
 
 void av1_fht4x4_c(const int16_t *input, tran_low_t *output, int stride,
                   int tx_type) {
+#if !CONFIG_DAALA_DCT
   if (tx_type == DCT_DCT) {
     aom_fdct4x4_c(input, output, stride);
   } else {
+#endif
     static const transform_2d FHT[] = {
       { fdct4, fdct4 },    // DCT_DCT
       { fadst4, fdct4 },   // ADST_DCT
