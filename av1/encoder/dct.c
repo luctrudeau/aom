@@ -22,6 +22,23 @@
 #include "av1/common/av1_fwd_txfm2d_cfg.h"
 #include "av1/common/idct.h"
 
+#if CONFIG_DAALA_DCT
+
+/*#define OD_MAXI(a, b) ((a) < (b) ? (b) : (a))*/
+# define OD_MAXI(a, b) ((a) ^ (((a) ^ (b)) & -((b) > (a))))
+/*#define OD_MINI(a, b) ((a) > (b) ? (b) : (a))*/
+# define OD_MINI(a, b) ((a) ^ (((b) ^ (a)) & -((b) < (a))))
+
+/*This is the strength reduced version of ((_a)/(1 << (_b))).
+  This will not work for _b == 0, however currently this is only used for
+  b == 1 anyway.*/
+# define OD_UNBIASED_RSHIFT32(_a, _b) \
+  (((int32_t)(((uint32_t)(_a) >> (32 - (_b))) + (_a))) >> (_b))
+
+# define OD_DCT_RSHIFT(_a, _b) OD_UNBIASED_RSHIFT32(_a, _b)
+
+#endif
+
 static INLINE void range_check(const tran_low_t *input, const int size,
                                const int bit) {
 #if 0  // CONFIG_COEFFICIENT_RANGE_CHECKING
@@ -40,6 +57,54 @@ static INLINE void range_check(const tran_low_t *input, const int size,
 }
 
 static void fdct4(const tran_low_t *input, tran_low_t *output) {
+#if CONFIG_DAALA_DCT
+
+  /*9 adds, 2 shifts, 3 "muls".*/
+  int t0;
+  int t1;
+  int t2;
+  int t2h;
+  int t3;
+  /*Initial permutation:*/
+  t0 = input[0];
+  t2 = input[1];
+  t1 = input[2];
+  t3 = input[3];
+  /*+1/-1 butterflies:*/
+  t3 = t0 - t3;
+  t2 += t1;
+  t2h = OD_DCT_RSHIFT(t2, 1);
+  t1 = t2h - t1;
+  t0 -= OD_DCT_RSHIFT(t3, 1);
+  /*+ Embedded 2-point type-II DCT.*/
+  t0 += t2h;
+  t2 = t0 - t2;
+  /*+ Embedded 2-point type-IV DST.*/
+  /*23013/32768 ~= 4*sin(\frac{\pi}{8}) - 2*tan(\frac{\pi}{8}) ~=
+    0.70230660471416898931046248770220*/
+  //OD_DCT_OVERFLOW_CHECK(t1, 23013, 16384, 0);
+  t3 -= (t1*23013 + 16384) >> 15;
+  /*21407/32768~=\sqrt{1/2}*cos(\frac{\pi}{8}))
+    ~=0.65328148243818826392832158671359*/
+  //OD_DCT_OVERFLOW_CHECK(t3, 21407, 16384, 1);
+  t1 += (t3*21407 + 16384) >> 15;
+  /*18293/16384 ~= 4*sin(\frac{\pi}{8}) - tan(\frac{\pi}{8}) ~=
+    1.1165201670872640381121512119119*/
+  //OD_DCT_OVERFLOW_CHECK(t1, 18293, 8192, 2);
+  t3 -= (t1*18293 + 8192) >> 14;
+
+  // Checking for overflow since Daala code uses 32bit ints.
+  assert(t0 < INT16_MAX && t0 > INT16_MIN);
+  assert(t1 < INT16_MAX && t1 > INT16_MIN);
+  assert(t2 < INT16_MAX && t2 > INT16_MIN);
+  assert(t3 < INT16_MAX && t3 > INT16_MIN);
+
+  output[0] = (tran_low_t)t0;
+  output[1] = (tran_low_t)t1;
+  output[2] = (tran_low_t)t2;
+  output[3] = (tran_low_t)t3;
+
+#else
   tran_high_t temp;
   tran_low_t step[4];
 
@@ -73,6 +138,7 @@ static void fdct4(const tran_low_t *input, tran_low_t *output) {
   output[3] = step[3];
 
   range_check(output, 4, 16);
+#endif
 }
 
 static void fdct8(const tran_low_t *input, tran_low_t *output) {
@@ -1178,8 +1244,10 @@ void av1_fht4x4_c(const int16_t *input, tran_low_t *output, int stride,
 
     // Columns
     for (i = 0; i < 4; ++i) {
-      for (j = 0; j < 4; ++j) temp_in[j] = input[j * stride + i] * 16;
+      for (j = 0; j < 4; ++j) temp_in[j] = input[j * stride + i] << DCT_COEFF_PRE_SHIFT;
+#if !CONFIG_DAALA_DCT
       if (i == 0 && temp_in[0]) temp_in[0] += 1;
+#endif
       ht.cols(temp_in, temp_out);
       for (j = 0; j < 4; ++j) out[j * 4 + i] = temp_out[j];
     }
@@ -1188,9 +1256,15 @@ void av1_fht4x4_c(const int16_t *input, tran_low_t *output, int stride,
     for (i = 0; i < 4; ++i) {
       for (j = 0; j < 4; ++j) temp_in[j] = out[j + i * 4];
       ht.rows(temp_in, temp_out);
+#if CONFIG_DAALA_DCT
+      for (j = 0; j < 4; ++j) output[j + i * 4] = temp_out[j];
+#else
       for (j = 0; j < 4; ++j) output[j + i * 4] = (temp_out[j] + 1) >> 2;
+#endif
     }
+#if !CONFIG_DAALA_DCT
   }
+#endif
 }
 
 void av1_fht4x8_c(const int16_t *input, tran_low_t *output, int stride,

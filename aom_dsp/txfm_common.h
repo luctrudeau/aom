@@ -21,6 +21,12 @@
 #define UNIT_QUANT_SHIFT 2
 #define UNIT_QUANT_FACTOR (1 << UNIT_QUANT_SHIFT)
 
+#if CONFIG_DAALA_DCT
+#define DCT_COEFF_PRE_SHIFT (3)
+#else
+#define DCT_COEFF_PRE_SHIFT (4)
+#endif
+
 // Constants:
 //  for (int i = 1; i< 32; ++i)
 //    printf("static const int cospi_%d_64 = %.0f;\n", i,
