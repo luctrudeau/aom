@@ -4668,7 +4668,11 @@ static void encode_rd_sb_row(AV1_COMP *cpi, ThreadData *td,
       TX_SIZE t;
       SUBFRAME_STATS *subframe_stats = &cpi->subframe_stats;
 
+#if CONFIG_LIMIT_4X4
+      for (t = 0; t < TX_4x4; ++t)
+#else
       for (t = 0; t < TX_SIZES; ++t)
+#endif
         av1_full_to_model_counts(cpi->td.counts->coef[t],
                                  cpi->td.rd_counts.coef_counts[t]);
       av1_partial_adapt_probs(cm, mi_row, mi_col);
@@ -6758,7 +6762,11 @@ static void rd_supertx_sb(const AV1_COMP *const cpi, ThreadData *td,
 #if CONFIG_EXT_TX
   ext_tx_set = get_ext_tx_set(tx_size, bsize, 1);
 #endif  // CONFIG_EXT_TX
+#if CONFIG_LIMIT_4X4
+  for (tx_type = DCT_DCT; tx_type <= DCT_DCT; ++tx_type) {
+#else
   for (tx_type = DCT_DCT; tx_type < TX_TYPES; ++tx_type) {
+#endif
 #if CONFIG_VAR_TX
     ENTROPY_CONTEXT ctxa[2 * MAX_MIB_SIZE];
     ENTROPY_CONTEXT ctxl[2 * MAX_MIB_SIZE];

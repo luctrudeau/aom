@@ -4863,7 +4863,11 @@ static void encode_frame_to_data_rate(AV1_COMP *cpi, size_t *size,
 
   av1_update_reference_frames(cpi);
 
+#if CONFIG_LIMIT_4X4
+  for (t = 0; t <= TX_4X4; t++)
+#else
   for (t = 0; t < TX_SIZES; t++)
+#endif
     av1_full_to_model_counts(cpi->td.counts->coef[t],
                              cpi->td.rd_counts.coef_counts[t]);
 #if CONFIG_ENTROPY_STATS
