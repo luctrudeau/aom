@@ -286,6 +286,7 @@ EXPERIMENT_LIST="
     palette
     daala_ec
     pvq
+    pvq_cfl
     cb4x4
     frame_size
     delta_q
@@ -466,6 +467,9 @@ post_process_cmdline() {
     for c in ${CODECS}; do
         enabled ${c} && enable_feature ${c##*_}s
     done
+
+    # Enable PVQ if CFL is enabled
+    enabled cfl && enable_feature pvq
 
     # Enable adapt_scan by default
     soft_enable adapt_scan
