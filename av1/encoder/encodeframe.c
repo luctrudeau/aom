@@ -4668,12 +4668,20 @@ static void encode_rd_sb_row(AV1_COMP *cpi, ThreadData *td,
       TX_SIZE t;
       SUBFRAME_STATS *subframe_stats = &cpi->subframe_stats;
 
+      int tx_max = TX_SIZES;
+      int tx_min = 0;
 #if CONFIG_LIMIT_4X4
-      for (t = 0; t < TX_4x4; ++t)
-#else
-      for (t = 0; t < TX_SIZES; ++t)
+      tx_max = TX_4X4 + 1;
 #endif
-        av1_full_to_model_counts(cpi->td.counts->coef[t],
+#if CONFIG_LIMIT_8X8
+      tx_max = TX_8X8 + 1;
+      tx_min = TX_8X8;
+#endif
+#if CONFIG_LIMIT_4X4
+      tx_min = TX_4X4;
+#endif
+    for (t = tx_min; t < tx_max; ++t)
+      av1_full_to_model_counts(cpi->td.counts->coef[t],
                                  cpi->td.rd_counts.coef_counts[t]);
       av1_partial_adapt_probs(cm, mi_row, mi_col);
       ++cm->coef_probs_update_idx;
@@ -6745,7 +6753,7 @@ static void rd_supertx_sb(const AV1_COMP *const cpi, ThreadData *td,
 #if CONFIG_EXT_TX
   ext_tx_set = get_ext_tx_set(tx_size, bsize, 1);
 #endif  // CONFIG_EXT_TX
-#if CONFIG_LIMIT_4X4
+#if CONFIG_LIMIT_4X4 || CONFIG_LIMIT_8X8
   for (tx_type = DCT_DCT; tx_type <= DCT_DCT; ++tx_type) {
 #else
   for (tx_type = DCT_DCT; tx_type < TX_TYPES; ++tx_type) {

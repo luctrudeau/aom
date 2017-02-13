@@ -1888,6 +1888,19 @@ static int64_t choose_tx_size_fix_type(const AV1_COMP *const cpi, BLOCK_SIZE bs,
 #endif  // CONFIG_EXT_TX && CONFIG_RECT_TX
 
   last_rd = INT64_MAX;
+#if CONFIG_LIMIT_4X4
+  best_tx_size = TX_4X4;
+  start_tx = TX_4X4;
+#endif
+#if CONFIG_LIMIT_8X8
+  best_tx_size = TX_8X8;
+  start_tx = TX_8X8;
+  end_tx = TX_8X8;
+#endif
+#if CONFIG_LIMIT_4X4
+  end_tx = TX_4X4;
+#endif
+
   for (n = start_tx; n >= end_tx; --n) {
     RD_STATS this_rd_stats;
 #if CONFIG_EXT_TX && CONFIG_RECT_TX
@@ -1940,8 +1953,12 @@ static int64_t choose_tx_size_fix_type(const AV1_COMP *const cpi, BLOCK_SIZE bs,
     }
   }
   mbmi->tx_size = best_tx_size;
-#if CONFIG_LIMIT_4X4
-  mbmi->tx_size = TX_4X4;
+#if CONFIG_LIMIT_4X4 && CONFIG_LIMIT_8X8
+  assert(mbmi->tx_size == TX_4X4 || mbmi->tx_size == TX_8X8);
+#elif CONFIG_4X4
+  assert(mbmi->tx_size == TX_4X4);
+#elif CONFIG_8X8
+  assert(mbmi->tx_size == TX_8X8);
 #endif
 
   return best_rd;
@@ -2004,7 +2021,7 @@ static void choose_largest_tx_size(const AV1_COMP *const cpi, MACROBLOCK *x,
     od_encode_checkpoint(&x->daala_enc, &post_buf);
 #endif
 
-#if CONFIG_LIMIT_4X4
+#if CONFIG_LIMIT_4X4 || CONFIG_LIMIT_8X8
     for (tx_type = DCT_DCT; tx_type <= DCT_DCT; ++tx_type) {
 #else
     for (tx_type = DCT_DCT; tx_type < TX_TYPES; ++tx_type) {
@@ -2170,7 +2187,7 @@ static void choose_tx_size_type_from_rd(const AV1_COMP *const cpi,
 #if CONFIG_PVQ
   od_encode_checkpoint(&x->daala_enc, &buf);
 #endif
-#if CONFIG_LIMIT_4X4
+#if CONFIG_LIMIT_4X4 || CONFIG_LIMIT_8X8
   for (tx_type = DCT_DCT; tx_type <= DCT_DCT; ++tx_type) {
 #else
   for (tx_type = DCT_DCT; tx_type < TX_TYPES; ++tx_type) {

@@ -4857,12 +4857,20 @@ static void encode_frame_to_data_rate(AV1_COMP *cpi, size_t *size,
 
   av1_update_reference_frames(cpi);
 
+  int tx_max = TX_SIZES;
+  int tx_min = 0;
 #if CONFIG_LIMIT_4X4
-  for (t = 0; t <= TX_4X4; t++)
-#else
-  for (t = 0; t < TX_SIZES; t++)
+  tx_max = TX_4X4 + 1;
 #endif
-    av1_full_to_model_counts(cpi->td.counts->coef[t],
+#if CONFIG_LIMIT_8X8
+  tx_max = TX_8X8 + 1;
+  tx_min = TX_8X8;
+#endif
+#if CONFIG_LIMIT_4X4
+  tx_min = TX_4X4;
+#endif
+    for (t = tx_min; t < tx_max; ++t)
+      av1_full_to_model_counts(cpi->td.counts->coef[t],
                              cpi->td.rd_counts.coef_counts[t]);
 #if CONFIG_ENTROPY_STATS
   av1_accumulate_frame_counts(&aggregate_fc, &cm->counts);
