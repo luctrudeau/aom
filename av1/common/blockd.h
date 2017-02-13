@@ -398,6 +398,12 @@ static INLINE int is_inter_block(const MB_MODE_INFO *mbmi) {
   return mbmi->ref_frame[0] > INTRA_FRAME;
 }
 
+#if CONFIG_PVQ_CFL
+static INLINE int is_cfl(const MB_MODE_INFO *mbmi, PLANE_TYPE plane) {
+  return !is_inter_block(mbmi) && plane == PLANE_TYPE_UV;
+}
+#endif
+
 static INLINE int has_second_ref(const MB_MODE_INFO *mbmi) {
   return mbmi->ref_frame[1] > INTRA_FRAME;
 }
@@ -798,6 +804,10 @@ static INLINE TX_TYPE get_default_tx_type(PLANE_TYPE plane_type,
                                           TX_SIZE tx_size) {
   const MB_MODE_INFO *const mbmi = &xd->mi[0]->mbmi;
 
+#if CONFIG_PVQ_CFL
+  if (is_cfl(mbmi, plane_type)) return DCT_DCT;
+#endif
+
   if (is_inter_block(mbmi) || plane_type != PLANE_TYPE_Y ||
       xd->lossless[mbmi->segment_id] || tx_size >= TX_32X32)
     return DCT_DCT;
@@ -811,6 +821,10 @@ static INLINE TX_TYPE get_tx_type(PLANE_TYPE plane_type, const MACROBLOCKD *xd,
                                   int block_idx, TX_SIZE tx_size) {
   const MODE_INFO *const mi = xd->mi[0];
   const MB_MODE_INFO *const mbmi = &mi->mbmi;
+
+#if CONFIG_PVQ_CFL
+  if (is_cfl(mbmi, plane_type)) return DCT_DCT;
+#endif
 
   if (FIXED_TX_TYPE)
     return get_default_tx_type(plane_type, xd, block_idx, tx_size);

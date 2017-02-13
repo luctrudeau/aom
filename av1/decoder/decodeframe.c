@@ -453,6 +453,10 @@ static int av1_pvq_decode_helper2(AV1_COMMON *cm, MACROBLOCKD *const xd,
   eob = 0;
   dst = &pd->dst.buf[4 * row * pd->dst.stride + 4 * col];
 
+#if CONFIG_PVQ_CFL
+  if (is_cfl(mbmi, plane)) assert(tx_type == DCT_DCT);
+#endif
+
   if (ac_dc_coded) {
     int xdec = pd->subsampling_x;
     int seg_id = mbmi->segment_id;
