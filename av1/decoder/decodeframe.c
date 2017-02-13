@@ -345,10 +345,18 @@ static void inverse_transform_block(MACROBLOCKD *xd, int plane,
 static int av1_pvq_decode_helper(od_dec_ctx *dec, tran_low_t *ref_coeff,
                                  tran_low_t *dqcoeff, int16_t *quant, int pli,
                                  int bs, TX_TYPE tx_type, int xdec,
-                                 PVQ_SKIP_TYPE ac_dc_coded) {
+                                 PVQ_SKIP_TYPE ac_dc_coded
+#if CONFIG_PVQ_CFL
+                                 , MB_MODE_INFO *const mbmi
+#endif
+                                 ) {
   unsigned int flags;  // used for daala's stream analyzer.
   int off;
+#if CONFIG_PVQ_CFL
+  const int is_keyframe = is_cfl(mbmi, pli);
+#else
   const int is_keyframe = 0;
+#endif
   const int has_dc_skip = 1;
   /*TODO(tterribe): Handle CONFIG_AOM_HIGHBITDEPTH.*/
   int coeff_shift = 3 - get_tx_scale(bs);
@@ -479,7 +487,11 @@ static int av1_pvq_decode_helper2(AV1_COMMON *cm, MACROBLOCKD *const xd,
     quant = &pd->seg_dequant[seg_id][0];  // aom's quantizer
 
     eob = av1_pvq_decode_helper(&xd->daala_dec, pvq_ref_coeff, dqcoeff, quant,
-                                plane, tx_size, tx_type, xdec, ac_dc_coded);
+                                plane, tx_size, tx_type, xdec, ac_dc_coded
+#if CONFIG_PVQ_CFL
+                                , mbmi
+#endif
+                                );
 
     // Since av1 does not have separate inverse transform
     // but also contains adding to predicted image,

@@ -2254,7 +2254,11 @@ static void write_tokens_b(AV1_COMP *cpi, const TileInfo *const tile,
 
       for (idy = 0; idy < max_blocks_high; idy += step) {
         for (idx = 0; idx < max_blocks_wide; idx += step) {
+#if CONFIG_PVQ_CFL
+          const int is_keyframe = is_cfl(&m->mbmi, plane);
+#else
           const int is_keyframe = 0;
+#endif
           const int encode_flip = 0;
           const int flip = 0;
           const int robust = 1;

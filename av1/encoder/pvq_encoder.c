@@ -387,7 +387,11 @@ static int pvq_theta(od_coeff *out, const od_coeff *x0, const od_coeff *r0,
 #endif
     corr += OD_MULT16_16(x16[i], r16[i]);
   }
+#if CONFIG_PVQ_CFL
+  cfl_enabled = is_keyframe && !OD_DISABLE_CFL;
+#else
   cfl_enabled = is_keyframe && pli != 0 && !OD_DISABLE_CFL;
+#endif
   cg  = od_pvq_compute_gain(x16, n, q0, &g, beta, xshift);
   cgr = od_pvq_compute_gain(r16, n, q0, &gr, beta, rshift);
   if (cfl_enabled) cgr = OD_CGAIN_SCALE;
@@ -849,7 +853,11 @@ PVQ_SKIP_TYPE od_pvq_encode(daala_enc_ctx *enc,
   skip_diff = 0;
   flip = 0;
   /*If we are coding a chroma block of a keyframe, we are doing CfL.*/
+#if CONFIG_PVQ_CFL
+  if (is_keyframe) {
+#else
   if (pli != 0 && is_keyframe) {
+#endif
     od_val32 xy;
     xy = 0;
     /*Compute the dot-product of the first band of chroma with the luma ref.*/
@@ -886,8 +894,12 @@ PVQ_SKIP_TYPE od_pvq_encode(daala_enc_ctx *enc,
      qm + off[i], qm_inv + off[i], enc->pvq_norm_lambda, speed);
   }
   od_encode_checkpoint(enc, &buf);
+#if CONFIG_PVQ_CFL
+  if (!is_keyframe) {
+#else
   if (is_keyframe) out[0] = 0;
   else {
+#endif
     int n;
     n = OD_DIV_R0(abs(in[0] - ref[0]), dc_quant);
     if (n == 0) {
@@ -1004,8 +1016,12 @@ PVQ_SKIP_TYPE od_pvq_encode(daala_enc_ctx *enc,
     tell -= (int)floor(.5+8*skip_rate);
   }
   if (nb_bands == 0 || skip_diff <= enc->pvq_norm_lambda/8*tell) {
+#if CONFIG_PVQ_CFL
+    if (!is_keyframe) {
+#else
     if (is_keyframe) out[0] = 0;
     else {
+#endif
       int n;
       n = OD_DIV_R0(abs(in[0] - ref[0]), dc_quant);
       if (n == 0) {

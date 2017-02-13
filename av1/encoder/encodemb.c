@@ -626,7 +626,11 @@ void av1_xform_quant(const AV1_COMMON *cm, MACROBLOCK *x, int plane, int block,
                               tx_type,
                               &x->rate,  // rate measured
                               x->pvq_speed,
-                              pvq_info);  // PVQ info for a block
+                              pvq_info
+#if CONFIG_PVQ_CFL
+                              , mbmi
+#endif
+                              );  // PVQ info for a block
     skip = ac_dc_coded == PVQ_SKIP;
   }
   x->pvq_skip[plane] = skip;
@@ -1129,7 +1133,11 @@ void av1_encode_intra_block_plane(AV1_COMMON *cm, MACROBLOCK *x,
 PVQ_SKIP_TYPE av1_pvq_encode_helper(
     daala_enc_ctx *daala_enc, tran_low_t *const coeff, tran_low_t *ref_coeff,
     tran_low_t *const dqcoeff, uint16_t *eob, const int16_t *quant, int plane,
-    int tx_size, TX_TYPE tx_type, int *rate, int speed, PVQ_INFO *pvq_info) {
+    int tx_size, TX_TYPE tx_type, int *rate, int speed, PVQ_INFO *pvq_info
+#if CONFIG_PVQ_CFL
+    ,MB_MODE_INFO *mbmi
+#endif
+    ) {
   const int tx_blk_size = tx_size_wide[tx_size];
   PVQ_SKIP_TYPE ac_dc_coded;
   /*TODO(tterribe): Handle CONFIG_AOM_HIGHBITDEPTH.*/
@@ -1143,6 +1151,9 @@ PVQ_SKIP_TYPE av1_pvq_encode_helper(
   int off = od_qm_offset(tx_size, plane ? 1 : 0);
 #if PVQ_CHROMA_RD
   double save_pvq_lambda;
+#endif
+#if CONFIG_PVQ_CFL
+  const int is_keyframe = is_cfl(mbmi, plane);
 #endif
 
   DECLARE_ALIGNED(16, tran_low_t, coeff_pvq[OD_TXSIZE_MAX * OD_TXSIZE_MAX]);
@@ -1202,7 +1213,7 @@ PVQ_SKIP_TYPE av1_pvq_encode_helper(
       quant[1] << (OD_COEFF_SHIFT - 3),  // scale/quantizer
       plane, tx_size, OD_PVQ_BETA[use_activity_masking][plane][tx_size],
       OD_ROBUST_STREAM,
-      0,        // is_keyframe,
+      is_keyframe,        // is_keyframe,
       0, 0, 0,  // q_scaling, bx, by,
       daala_enc->state.qm + off, daala_enc->state.qm_inv + off,
       speed,  // speed
