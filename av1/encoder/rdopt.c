@@ -2004,7 +2004,7 @@ static void choose_largest_tx_size(const AV1_COMP *const cpi, MACROBLOCK *x,
     od_encode_checkpoint(&x->daala_enc, &post_buf);
 #endif
 
-#if CONFIG_LIMIT_4X4
+#if CONFIG_LIMIT_DCT
     for (tx_type = DCT_DCT; tx_type <= DCT_DCT; ++tx_type) {
 #else
     for (tx_type = DCT_DCT; tx_type < TX_TYPES; ++tx_type) {
@@ -2170,7 +2170,7 @@ static void choose_tx_size_type_from_rd(const AV1_COMP *const cpi,
 #if CONFIG_PVQ
   od_encode_checkpoint(&x->daala_enc, &buf);
 #endif
-#if CONFIG_LIMIT_4X4
+#if CONFIG_LIMIT_DCT
   for (tx_type = DCT_DCT; tx_type <= DCT_DCT; ++tx_type) {
 #else
   for (tx_type = DCT_DCT; tx_type < TX_TYPES; ++tx_type) {

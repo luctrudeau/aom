@@ -516,8 +516,10 @@ static void predict_and_reconstruct_intra_block(
   av1_predict_intra_block(xd, pd->width, pd->height, txsize_to_bsize[tx_size],
                           mode, dst, pd->dst.stride, dst, pd->dst.stride, col,
                           row, plane);
-#if CONFIG_LIMIT_4X4
+#if CONFIG_LIMIT_DCT
   assert(mbmi->tx_type == DCT_DCT);
+#endif
+#if CONFIG_LIMIT_4X4
   assert(mbmi->tx_size == TX_4X4);
 #endif
   if (!mbmi->skip) {

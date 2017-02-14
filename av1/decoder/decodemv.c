@@ -807,7 +807,7 @@ static void read_tx_type(const AV1_COMMON *const cm, MACROBLOCKD *xd,
     }
 #endif  // CONFIG_EXT_TX
   }
-#if CONFIG_LIMIT_4X4
+#if CONFIG_LIMIT_DCT
   assert(mbmi->tx_type == DCT_DCT);
 #endif
 }
