@@ -469,7 +469,7 @@ post_process_cmdline() {
     done
 
     # Enable PVQ if CFL is enabled
-    enabled cfl && enable_feature pvq
+    enabled pvq_cfl && enable_feature pvq
 
     # Enable adapt_scan by default
     soft_enable adapt_scan
