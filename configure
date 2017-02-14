@@ -288,6 +288,7 @@ EXPERIMENT_LIST="
     pvq
     daala_tx
     limit_tx_4x4
+    dct_only
     cb4x4
     frame_size
     delta_q

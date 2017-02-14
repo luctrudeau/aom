@@ -928,6 +928,9 @@ static void read_intra_frame_mode_info(AV1_COMMON *const cm,
                0,
 #endif
                r);
+#if CONFIG_DCT_ONLY
+  return DCT_DCT;
+#endif
 }
 
 static int read_mv_component(aom_reader *r, nmv_component *mvcomp, int usehp) {
