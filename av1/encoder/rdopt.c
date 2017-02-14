@@ -1940,7 +1940,9 @@ static int64_t choose_tx_size_fix_type(const AV1_COMP *const cpi, BLOCK_SIZE bs,
     }
   }
   mbmi->tx_size = best_tx_size;
-
+#if CONFIG_LIMIT_TX_4X4
+  mbmi->tx_size = TX_4X4;
+#endif
   return best_rd;
 }
 

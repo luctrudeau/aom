@@ -509,6 +509,9 @@ static void predict_and_reconstruct_intra_block(
     if (plane == 0) mode = xd->mi[0]->bmi[block_idx].as_mode;
 #endif
 
+#if CONFIG_LIMIT_TX_4X4
+  assert(tx_size == TX_4X4);
+#endif
   av1_predict_intra_block(xd, pd->width, pd->height, txsize_to_bsize[tx_size],
                           mode, dst, pd->dst.stride, dst, pd->dst.stride, col,
                           row, plane);
