@@ -502,6 +502,10 @@ void av1_xform_quant(const AV1_COMMON *cm, MACROBLOCK *x, int plane, int block,
   const qm_val_t *iqmatrix = pd->seg_iqmatrix[seg_id][!is_inter][tx_size];
 #endif
 
+#if CONFIG_LIMIT_DCT
+  assert(tx_type == DCT_DCT);
+#endif
+
   FWD_TXFM_PARAM fwd_txfm_param;
 
 #if CONFIG_PVQ || CONFIG_DAALA_DIST
