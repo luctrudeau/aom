@@ -1290,7 +1290,7 @@ static void maybe_flip_input(const int16_t **src, int *src_stride, int l, int w,
 
 void av1_fht4x4_c(const int16_t *input, tran_low_t *output, int stride,
                   int tx_type) {
-#if !CONFIG_DAALA_TX
+#if !CONFIG_USE_C_TX
   if (tx_type == DCT_DCT) {
     aom_fdct4x4_c(input, output, stride);
   } else {
@@ -1346,7 +1346,7 @@ void av1_fht4x4_c(const int16_t *input, tran_low_t *output, int stride,
       for (j = 0; j < 4; ++j) output[j + i * 4] = (temp_out[j] + 1) >> 2;
 #endif
     }
-#if !CONFIG_DAALA_TX
+#if !CONFIG_USE_C_TX
   }
 #endif
 }
