@@ -286,7 +286,7 @@ EXPERIMENT_LIST="
     palette
     daala_ec
     pvq
-    daala_dct
+    daala_tx
     limit_4x4
     limit_dct
     cb4x4

@@ -123,7 +123,7 @@ static INLINE uint8_t clip_pixel_add(uint8_t dest, tran_high_t trans) {
   return clip_pixel(dest + (int)trans);
 }
 
-#if CONFIG_DAALA_DCT
+#if CONFIG_DAALA_TX
 
 # define OD_UNBIASED_RSHIFT32(_a, _b) \
   (((int32_t)(((uint32_t)(_a) >> (32 - (_b))) + (_a))) >> (_b))

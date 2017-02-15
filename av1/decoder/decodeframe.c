@@ -465,7 +465,7 @@ static int av1_pvq_decode_helper2(AV1_COMMON *cm, MACROBLOCKD *const xd,
       for (i = 0; i < tx_blk_size; i++) {
         pred[diff_stride * j + i] = dst[pd->dst.stride * j + i];
       }
-#if CONFIG_DAALA_DCT
+#if CONFIG_DAALA_TX
     assert(tx_size == TX_4X4);
     assert(tx_type == DCT_DCT);
 #endif

@@ -94,7 +94,7 @@ void aom_iwht4x4_1_add_c(const tran_low_t *in, uint8_t *dest, int dest_stride) {
 }
 
 void aom_idct4_c(const tran_low_t *input, tran_low_t *output) {
-#if CONFIG_DAALA_DCT
+#if CONFIG_DAALA_TX
   /*This is the strength reduced version of ((_a)/(1 << (_b))).
     This will not work for _b == 0, however currently this is only used for
     b == 1 anyway.*/

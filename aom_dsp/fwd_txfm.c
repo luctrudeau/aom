@@ -14,7 +14,7 @@
 #include "./aom_dsp_rtcd.h"
 
 void aom_fdct4x4_c(const int16_t *input, tran_low_t *output, int stride) {
-#if CONFIG_DAALA_DCT
+#if CONFIG_DAALA_TX
   assert(0);
 #endif
   // The 2D transform is done with two passes which are actually pretty
