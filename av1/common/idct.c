@@ -21,9 +21,6 @@
 #include "av1/common/idct.h"
 
 int get_tx_scale(const TX_SIZE tx_size) {
-#if CONFIG_DAALA_TX
-  return 0;
-#endif
   if (txsize_sqr_up_map[tx_size] == TX_32X32) return 1;
 #if CONFIG_TX64X64
   else if (txsize_sqr_up_map[tx_size] == TX_64X64)

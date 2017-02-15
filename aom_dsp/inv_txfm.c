@@ -93,13 +93,35 @@ void aom_iwht4x4_1_add_c(const tran_low_t *in, uint8_t *dest, int dest_stride) {
   }
 }
 
+#if !CONFIG_DAALA_TX
 void aom_idct4_c(const tran_low_t *input, tran_low_t *output) {
-#if CONFIG_DAALA_TX
-  /*This is the strength reduced version of ((_a)/(1 << (_b))).
-    This will not work for _b == 0, however currently this is only used for
-    b == 1 anyway.*/
+  tran_low_t step[4];
+  tran_high_t temp1, temp2;
+
+  // stage 1
+  temp1 = (input[0] + input[2]) * cospi_16_64;
+  temp2 = (input[0] - input[2]) * cospi_16_64;
+  step[0] = WRAPLOW(dct_const_round_shift(temp1));
+  step[1] = WRAPLOW(dct_const_round_shift(temp2));
+  temp1 = input[1] * cospi_24_64 - input[3] * cospi_8_64;
+  temp2 = input[1] * cospi_8_64 + input[3] * cospi_24_64;
+  step[2] = WRAPLOW(dct_const_round_shift(temp1));
+  step[3] = WRAPLOW(dct_const_round_shift(temp2));
+
+  // stage 2
+  output[0] = WRAPLOW(step[0] + step[3]);
+  output[1] = WRAPLOW(step[1] + step[2]);
+  output[2] = WRAPLOW(step[1] - step[2]);
+  output[3] = WRAPLOW(step[0] - step[3]);
+}
+
+#else
+
+/*This is the strength reduced version of ((_a)/(1 << (_b))).
+  This will not work for _b == 0, however currently this is only used for
+   b == 1 anyway.*/
 # define OD_UNBIASED_RSHIFT32(_a, _b) \
-  (((int32_t)(((uint32_t)(_a) >> (32 - (_b))) + (_a))) >> (_b))
+ (((int32_t)(((uint32_t)(_a) >> (32 - (_b))) + (_a))) >> (_b))
 
 # define OD_DCT_RSHIFT(_a, _b) OD_UNBIASED_RSHIFT32(_a, _b)
 
@@ -141,22 +163,21 @@ void aom_idct4_c(const tran_low_t *input, tran_low_t *output) {
   } \
   while (0)
 
- int t0;
- int t1;
- int t2;
- int t3;
- t0 = input[0];
- t2 = input[1];
- t1 = input[2];
- t3 = input[3];
- OD_IDCT_4(t0, t2, t1, t3);
- output[0] = t0;
- output[1] = t1;
- output[2] = t2;
- output[3] = t3;
-
-#else
+void aom_idct4_c(const tran_low_t *input, tran_low_t *output) {
 /*  int t0;
+  int t1;
+  int t2;
+  int t3;
+  t0 = y[0];
+  t2 = y[1];
+  t1 = y[2];
+  t3 = y[3];
+  OD_IDCT_4(t0, t2, t1, t3);
+  x[0] = t0;
+  x[1] = t1;
+  x[2] = t2;
+  x[3] = t3;*/
+  int t0;
   int t1;
   int t2;
   int t2h;
@@ -176,26 +197,9 @@ void aom_idct4_c(const tran_low_t *input, tran_low_t *output) {
   output[1] = (tran_low_t)(t2 - t1);
   output[2] = (tran_low_t)t1;
   output[3] = (tran_low_t)(t0 - t3);
-#else
-  tran_low_t step[4];
-  tran_high_t temp1, temp2;
-  // stage 1
-  temp1 = (input[0] + input[2]) * cospi_16_64;
-  temp2 = (input[0] - input[2]) * cospi_16_64;
-  step[0] = WRAPLOW(dct_const_round_shift(temp1));
-  step[1] = WRAPLOW(dct_const_round_shift(temp2));
-  temp1 = input[1] * cospi_24_64 - input[3] * cospi_8_64;
-  temp2 = input[1] * cospi_8_64 + input[3] * cospi_24_64;
-  step[2] = WRAPLOW(dct_const_round_shift(temp1));
-  step[3] = WRAPLOW(dct_const_round_shift(temp2));
-
-  // stage 2
-  output[0] = WRAPLOW(step[0] + step[3]);
-  output[1] = WRAPLOW(step[1] + step[2]);
-  output[2] = WRAPLOW(step[1] - step[2]);
-  output[3] = WRAPLOW(step[0] - step[3]);*/
-#endif
 }
+
+#endif
 
 void aom_idct4x4_16_add_c(const tran_low_t *input, uint8_t *dest, int stride) {
   tran_low_t out[4 * 4];

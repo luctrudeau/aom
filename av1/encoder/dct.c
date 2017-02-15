@@ -56,13 +56,48 @@ static INLINE void range_check(const tran_low_t *input, const int size,
 #endif
 }
 
-static void fdct4(const tran_low_t *input, tran_low_t *output) {
-#if CONFIG_DAALA_TX
-  /*This is the strength reduced version of ((_a)/(1 << (_b))).
-    This will not work for _b == 0, however currently this is only used for
-    b == 1 anyway.*/
+#if !CONFIG_DAALA_TX
+void fdct4(const tran_low_t *input, tran_low_t *output) {
+  tran_high_t temp;
+  tran_low_t step[4];
+
+  // stage 0
+  range_check(input, 4, 14);
+
+  // stage 1
+  output[0] = input[0] + input[3];
+  output[1] = input[1] + input[2];
+  output[2] = input[1] - input[2];
+  output[3] = input[0] - input[3];
+
+  range_check(output, 4, 15);
+
+  // stage 2
+  temp = output[0] * cospi_16_64 + output[1] * cospi_16_64;
+  step[0] = (tran_low_t)fdct_round_shift(temp);
+  temp = output[1] * -cospi_16_64 + output[0] * cospi_16_64;
+  step[1] = (tran_low_t)fdct_round_shift(temp);
+  temp = output[2] * cospi_24_64 + output[3] * cospi_8_64;
+  step[2] = (tran_low_t)fdct_round_shift(temp);
+  temp = output[3] * cospi_24_64 + output[2] * -cospi_8_64;
+  step[3] = (tran_low_t)fdct_round_shift(temp);
+
+  range_check(step, 4, 16);
+
+  // stage 3
+  output[0] = step[0];
+  output[1] = step[2];
+  output[2] = step[1];
+  output[3] = step[3];
+
+  range_check(output, 4, 16);
+}
+#else
+/*This is the strength reduced version of ((_a)/(1 << (_b))).
+  This will not work for _b == 0, however currently this is only used for
+   b == 1 anyway.*/
 # define OD_UNBIASED_RSHIFT32(_a, _b) \
-  (((int32_t)(((uint32_t)(_a) >> (32 - (_b))) + (_a))) >> (_b))
+ (((int32_t)(((uint32_t)(_a) >> (32 - (_b))) + (_a))) >> (_b))
 
 # define OD_DCT_RSHIFT(_a, _b) OD_UNBIASED_RSHIFT32(_a, _b)
 
@@ -107,7 +142,7 @@ static void fdct4(const tran_low_t *input, tran_low_t *output) {
   } \
   while (0)
 
-  //void fdct4(const tran_low_t *input, tran_low_t *output) {
+void fdct4(const tran_low_t *input, tran_low_t *output) {
   int t0;
   int t1;
   int t2;
@@ -121,42 +156,8 @@ static void fdct4(const tran_low_t *input, tran_low_t *output) {
   output[1] = (tran_low_t)t1;
   output[2] = (tran_low_t)t2;
   output[3] = (tran_low_t)t3;
-#else
-  tran_high_t temp;
-  tran_low_t step[4];
-
-  // stage 0
-  range_check(input, 4, 14);
-
-  // stage 1
-  output[0] = input[0] + input[3];
-  output[1] = input[1] + input[2];
-  output[2] = input[1] - input[2];
-  output[3] = input[0] - input[3];
-
-  range_check(output, 4, 15);
-
-  // stage 2
-  temp = output[0] * cospi_16_64 + output[1] * cospi_16_64;
-  step[0] = (tran_low_t)fdct_round_shift(temp);
-  temp = output[1] * -cospi_16_64 + output[0] * cospi_16_64;
-  step[1] = (tran_low_t)fdct_round_shift(temp);
-  temp = output[2] * cospi_24_64 + output[3] * cospi_8_64;
-  step[2] = (tran_low_t)fdct_round_shift(temp);
-  temp = output[3] * cospi_24_64 + output[2] * -cospi_8_64;
-  step[3] = (tran_low_t)fdct_round_shift(temp);
-
-  range_check(step, 4, 16);
-
-  // stage 3
-  output[0] = step[0];
-  output[1] = step[2];
-  output[2] = step[1];
-  output[3] = step[3];
-
-  range_check(output, 4, 16);
-#endif
 }
+#endif
 
 static void fdct8(const tran_low_t *input, tran_low_t *output) {
   tran_high_t temp;
