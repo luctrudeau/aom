@@ -6762,7 +6762,7 @@ static void rd_supertx_sb(const AV1_COMP *const cpi, ThreadData *td,
 #if CONFIG_EXT_TX
   ext_tx_set = get_ext_tx_set(tx_size, bsize, 1);
 #endif  // CONFIG_EXT_TX
-#if CONFIG_LIMIT_DCT
+#if CONFIG_DCT_ONLY
   for (tx_type = DCT_DCT; tx_type <= DCT_DCT; ++tx_type) {
 #else
   for (tx_type = DCT_DCT; tx_type < TX_TYPES; ++tx_type) {

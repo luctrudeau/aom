@@ -797,7 +797,7 @@ static INLINE TX_TYPE get_default_tx_type(PLANE_TYPE plane_type,
                                           const MACROBLOCKD *xd, int block_idx,
                                           TX_SIZE tx_size) {
   const MB_MODE_INFO *const mbmi = &xd->mi[0]->mbmi;
-#if CONFIG_LIMIT_DCT
+#if CONFIG_DCT_ONLY
   return DCT_DCT;
 #endif
 
@@ -814,7 +814,7 @@ static INLINE TX_TYPE get_tx_type(PLANE_TYPE plane_type, const MACROBLOCKD *xd,
                                   int block_idx, TX_SIZE tx_size) {
   const MODE_INFO *const mi = xd->mi[0];
   const MB_MODE_INFO *const mbmi = &mi->mbmi;
-#if CONFIG_LIMIT_DCT
+#if CONFIG_DCT_ONLY
   return DCT_DCT;
 #endif
 
