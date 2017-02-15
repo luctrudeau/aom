@@ -366,7 +366,7 @@ void av1_iht4x4_16_add_c(const tran_low_t *input, uint8_t *dest, int stride,
 
   // inverse transform row vectors
   for (i = 0; i < 4; ++i) {
-    IHT_4[tx_type].rows(input, out[i]);
+    aom_idct4_c(input, out[i]);
     input += 4;
   }
 
@@ -381,7 +381,7 @@ void av1_iht4x4_16_add_c(const tran_low_t *input, uint8_t *dest, int stride,
 
   // inverse transform column vectors
   for (i = 0; i < 4; ++i) {
-    IHT_4[tx_type].cols(out[i], out[i]);
+    aom_idct4_c(out[i], out[i]);
   }
 
 #if CONFIG_EXT_TX

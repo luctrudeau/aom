@@ -1332,14 +1332,14 @@ void av1_fht4x4_c(const int16_t *input, tran_low_t *output, int stride,
 #if !CONFIG_DAALA_TX
       if (i == 0 && temp_in[0]) temp_in[0] += 1;
 #endif
-      ht.cols(temp_in, temp_out);
+      fdct4(temp_in, temp_out);
       for (j = 0; j < 4; ++j) out[j * 4 + i] = temp_out[j];
     }
 
     // Rows
     for (i = 0; i < 4; ++i) {
       for (j = 0; j < 4; ++j) temp_in[j] = out[j + i * 4];
-      ht.rows(temp_in, temp_out);
+      fdct4(temp_in, temp_out);
 #if CONFIG_DAALA_TX
       for (j = 0; j < 4; ++j) output[j + i * 4] = temp_out[j];
 #else
