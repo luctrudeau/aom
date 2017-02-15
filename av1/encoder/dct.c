@@ -811,7 +811,8 @@ static void fdct32(const tran_low_t *input, tran_low_t *output) {
 
 #ifndef AV1_DCT_GTEST
 
-static void fadst4(const tran_low_t *input, tran_low_t *output) {
+#if !CONFIG_DAALA_TX
+void fadst4(const tran_low_t *input, tran_low_t *output) {
   tran_high_t x0, x1, x2, x3;
   tran_high_t s0, s1, s2, s3, s4, s5, s6, s7;
 
@@ -851,6 +852,70 @@ static void fadst4(const tran_low_t *input, tran_low_t *output) {
   output[3] = (tran_low_t)fdct_round_shift(s3);
 }
 
+#else
+
+#define OD_FDST_4(q0, q2, q1, q3) \
+  /* Embedded 4-point orthonormal Type-IV fDST. */ \
+do { \
+  int q0h; \
+  int q1h; \
+  /* 13573/32768 ~= Tan[Pi/8] ~= 0.414213562373095 */ \
+  OD_DCT_OVERFLOW_CHECK(q1, 13573, 16384, 190); \
+  q2 += (q1*13573 + 16384) >> 15; \
+  /* 5793/8192 ~= Sin[Pi/4] ~= 0.707106781186547 */ \
+  OD_DCT_OVERFLOW_CHECK(q2, 5793, 4096, 191); \
+  q1 -= (q2*5793 + 4096) >> 13; \
+  /* 3393/8192 ~= Tan[Pi/8] ~= 0.414213562373095 */ \
+  OD_DCT_OVERFLOW_CHECK(q1, 3393, 4096, 192); \
+  q2 += (q1*3393 + 4096) >> 13; \
+  q0 += q2; \
+  q0h = OD_DCT_RSHIFT(q0, 1); \
+  q2 = q0h - q2; \
+  q1 += q3; \
+  q1h = OD_DCT_RSHIFT(q1, 1); \
+  q3 -= q1h; \
+  /* 537/1024 ~= (1/Sqrt[2] - Cos[3*Pi/16]/2)/Sin[3*Pi/16] ~=
+     0.524455699240090 */ \
+  OD_DCT_OVERFLOW_CHECK(q1, 537, 512, 193); \
+    q2 -= (q1*537 + 512) >> 10; \
+    /* 1609/2048 ~= Sqrt[2]*Sin[3*Pi/16] ~= 0.785694958387102 */ \
+    OD_DCT_OVERFLOW_CHECK(q2, 1609, 1024, 194); \
+    q1 += (q2*1609 + 1024) >> 11; \
+    /* 7335/32768 ~= (1/Sqrt[2] - Cos[3*Pi/16])/Sin[3*Pi/16] ~=
+       0.223847182092655 */ \
+    OD_DCT_OVERFLOW_CHECK(q1, 7335, 16384, 195); \
+    q2 += (q1*7335 + 16384) >> 15; \
+    /* 5091/8192 ~= (1/Sqrt[2] - Cos[7*Pi/16]/2)/Sin[7*Pi/16] ~=
+       0.6215036383171189 */ \
+    OD_DCT_OVERFLOW_CHECK(q0, 5091, 4096, 196); \
+    q3 += (q0*5091 + 4096) >> 13; \
+    /* 5681/4096 ~= Sqrt[2]*Sin[7*Pi/16] ~= 1.38703984532215 */ \
+    OD_DCT_OVERFLOW_CHECK(q3, 5681, 2048, 197); \
+    q0 -= (q3*5681 + 2048) >> 12; \
+    /* 4277/8192 ~= (1/Sqrt[2] - Cos[7*Pi/16])/Sin[7*Pi/16] ~=
+       0.52204745462729 */ \
+    OD_DCT_OVERFLOW_CHECK(q0, 4277, 4096, 198); \
+    q3 += (q0*4277 + 4096) >> 13; \
+} \
+  while (0)
+
+  void fadst4(const tran_low_t *x, tran_low_t *y) {
+    int t0;
+    int t1;
+    int t2;
+    int t3;
+    t0 = x[3];
+    t2 = -x[2];
+    t1 = x[1];
+    t3 = -x[0];
+    OD_FDST_4(t0, t2, t1, t3);
+    y[0] = (tran_low_t)t0;
+    y[1] = (tran_low_t)t1;
+    y[2] = (tran_low_t)t2;
+    y[3] = (tran_low_t)t3;
+  }
+
+#endif
 static void fadst8(const tran_low_t *input, tran_low_t *output) {
   tran_high_t s0, s1, s2, s3, s4, s5, s6, s7;
 
@@ -1262,7 +1327,8 @@ void av1_fht4x4_c(const int16_t *input, tran_low_t *output, int stride,
 
     // Columns
     for (i = 0; i < 4; ++i) {
-      for (j = 0; j < 4; ++j) temp_in[j] = input[j * stride + i] << DCT_COEFF_PRE_SHIFT;
+      for (j = 0; j < 4; ++j) temp_in[j] = input[j * stride + i]
+        << DCT_COEFF_PRE_SHIFT;
 #if !CONFIG_DAALA_TX
       if (i == 0 && temp_in[0]) temp_in[0] += 1;
 #endif

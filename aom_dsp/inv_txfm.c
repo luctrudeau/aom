@@ -332,6 +332,7 @@ void aom_idct8x8_1_add_c(const tran_low_t *input, uint8_t *dest, int stride) {
   }
 }
 
+#if !CONFIG_DAALA_TX
 void aom_iadst4_c(const tran_low_t *input, tran_low_t *output) {
   tran_high_t s0, s1, s2, s3, s4, s5, s6, s7;
 
@@ -368,6 +369,61 @@ void aom_iadst4_c(const tran_low_t *input, tran_low_t *output) {
   output[2] = WRAPLOW(dct_const_round_shift(s2));
   output[3] = WRAPLOW(dct_const_round_shift(s0 + s1 - s3));
 }
+
+#else
+
+#define OD_IDST_4(q0, q2, q1, q3) \
+  /* Embedded 4-point orthonormal Type-IV iDST. */ \
+do { \
+  int q0h; \
+  int q2h; \
+  /* 4277/8192 ~= (1/Sqrt[2] - Cos[7*Pi/16])/Sin[7*Pi/16] ~=
+     0.52204745462729 */ \
+  q3 -= (q0*4277 + 4096) >> 13; \
+    /* 5681/4096 ~= Sqrt[2]*Sin[7*Pi/16] ~= 1.38703984532215 */ \
+    q0 += (q3*5681 + 2048) >> 12; \
+    /* 5091/8192 ~= (1/Sqrt[2] - Cos[7*Pi/16]/2)/Sin[7*Pi/16] ~=
+       0.6215036383171189 */ \
+    q3 -= (q0*5091 + 4096) >> 13; \
+    /* 7335/32768 ~= (1/Sqrt[2] - Cos[3*Pi/16])/Sin[3*Pi/16] ~=
+       0.223847182092655 */ \
+    q1 -= (q2*7335 + 16384) >> 15; \
+    /* 1609/2048 ~= Sqrt[2]*Sin[3*Pi/16] ~= 0.785694958387102 */ \
+    q2 -= (q1*1609 + 1024) >> 11; \
+    /* 537/1024 ~= (1/Sqrt[2] - Cos[3*Pi/16]/2)/Sin[3*Pi/16] ~=
+       0.524455699240090 */ \
+    q1 += (q2*537 + 512) >> 10; \
+    q2h = OD_DCT_RSHIFT(q2, 1); \
+    q3 += q2h; \
+    q2 -= q3; \
+    q0h = OD_DCT_RSHIFT(q0, 1); \
+    q1 = q0h - q1; \
+    q0 -= q1; \
+    /* 3393/8192 ~= Tan[Pi/8] ~= 0.414213562373095 */ \
+    q1 -= (q2*3393 + 4096) >> 13; \
+    /* 5793/8192 ~= Sin[Pi/4] ~= 0.707106781186547 */ \
+    q2 += (q1*5793 + 4096) >> 13; \
+    /* 13573/32768 ~= Tan[Pi/8] ~= 0.414213562373095 */ \
+    q1 -= (q2*13573 + 16384) >> 15; \
+} \
+  while (0)
+
+  void aom_iadst4_c(const tran_low_t *y, tran_low_t *x) {
+    int t0;
+    int t1;
+    int t2;
+    int t3;
+    t0 = y[0];
+    t2 = y[1];
+    t1 = y[2];
+    t3 = y[3];
+    OD_IDST_4(t0, t2, t1, t3);
+    x[0] = -t3;
+    x[1] = t2;
+    x[2] = -t1;
+    x[3] = t0;
+  }
+#endif
 
 void aom_iadst8_c(const tran_low_t *input, tran_low_t *output) {
   int s0, s1, s2, s3, s4, s5, s6, s7;
