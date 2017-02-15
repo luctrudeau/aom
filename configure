@@ -489,6 +489,9 @@ post_process_cmdline() {
     # Enable daala_ec by default
     ! enabled ans && soft_enable daala_ec
 
+    # Enable USE_C_ONLY if DAALA_TX enabled
+    enabled use_c_only && enable_feature daala_tx
+
     # Fix up experiment dependencies
     enabled ec_adapt && enable_feature ec_multisymbol
     enabled new_tokenset && enable_feature ec_multisymbol
