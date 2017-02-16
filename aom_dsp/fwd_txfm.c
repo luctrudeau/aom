@@ -14,7 +14,7 @@
 #include "./aom_dsp_rtcd.h"
 
 void aom_fdct4x4_c(const int16_t *input, tran_low_t *output, int stride) {
-#if CONFIG_LIMIT_4X4
+#if CONFIG_LIMIT_4X4 || CONFIG_LIMIT_8X8
   assert(0);
 #endif
   // The 2D transform is done with two passes which are actually pretty
@@ -92,6 +92,9 @@ void aom_fdct4x4_1_c(const int16_t *input, tran_low_t *output, int stride) {
 }
 
 void aom_fdct8x8_c(const int16_t *input, tran_low_t *final_output, int stride) {
+#if CONFIG_LIMIT_8X8
+  assert(0);
+#endif
   int i, j;
   tran_low_t intermediate[64];
   int pass;

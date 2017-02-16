@@ -159,7 +159,8 @@ void fdct4(const tran_low_t *input, tran_low_t *output) {
 }
 #endif
 
-static void fdct8(const tran_low_t *input, tran_low_t *output) {
+#if !CONFIG_DAALA_TX
+void fdct8(const tran_low_t *input, tran_low_t *output) {
   tran_high_t temp;
   tran_low_t step[8];
 
@@ -186,7 +187,7 @@ static void fdct8(const tran_low_t *input, tran_low_t *output) {
   step[4] = output[4];
   temp = output[5] * -cospi_16_64 + output[6] * cospi_16_64;
   step[5] = (tran_low_t)fdct_round_shift(temp);
-  temp = output[6] * cospi_16_64 + output[5] * cospi_16_64;
+  temp = output[6] * cospi_17_64 + output[5] * cospi_16_64;
   step[6] = (tran_low_t)fdct_round_shift(temp);
   step[7] = output[7];
 
@@ -236,6 +237,140 @@ static void fdct8(const tran_low_t *input, tran_low_t *output) {
 
   range_check(output, 8, 16);
 }
+
+#else
+
+#define OD_FDCT_2(t0, t1) \
+  /* Embedded 2-point orthonormal Type-II fDCT. */ \
+do { \
+  /* 13573/32768 ~= Tan[pi/8] ~= 0.414213562373095 */ \
+  OD_DCT_OVERFLOW_CHECK(t1, 13573, 16384, 100); \
+  t0 -= (t1*13573 + 16384) >> 15; \
+  /* 5793/8192 ~= Sin[pi/4] ~= 0.707106781186547 */ \
+  OD_DCT_OVERFLOW_CHECK(t0, 5793, 4096, 101); \
+  t1 += (t0*5793 + 4096) >> 13; \
+  /* 3393/8192 ~= Tan[pi/8] ~= 0.414213562373095 */ \
+  OD_DCT_OVERFLOW_CHECK(t1, 3393, 4096, 102); \
+  t0 -= (t1*3393 + 4096) >> 13; \
+} \
+while (0)
+
+#define OD_FDST_2(t0, t1) \
+  /* Embedded 2-point orthonormal Type-IV fDST. */ \
+do { \
+  /* 10947/16384 ~= Tan[3*Pi/16] ~= 0.668178637919299 */ \
+  OD_DCT_OVERFLOW_CHECK(t1, 10947, 8192, 103); \
+  t0 -= (t1*10947 + 8192) >> 14; \
+  /* 473/512 ~= Sin[3*Pi/8] ~= 0.923879532511287 */ \
+  OD_DCT_OVERFLOW_CHECK(t0, 473, 256, 104); \
+  t1 += (t0*473 + 256) >> 9; \
+  /* 10947/16384 ~= Tan[3*Pi/16] ~= 0.668178637919299 */ \
+  OD_DCT_OVERFLOW_CHECK(t1, 10947, 8192, 105); \
+  t0 -= (t1*10947 + 8192) >> 14; \
+} \
+while (0)
+
+#define OD_FDCT_4_ASYM(t0, t2, t2h, t1, t3, t3h) \
+  /* Embedded 4-point asymmetric Type-II fDCT. */ \
+do { \
+  t0 += t3h; \
+  t3 = t0 - t3; \
+  t1 = t2h - t1; \
+  t2 = t1 - t2; \
+  OD_FDCT_2(t0, t2); \
+  OD_FDST_2(t3, t1); \
+} \
+while (0)
+
+#define OD_FDST_4_ASYM(t0, t0h, t2, t1, t3) \
+  /* Embedded 4-point asymmetric Type-IV fDST. */ \
+do { \
+  /* 7489/8192 ~= Tan[Pi/8] + Tan[Pi/4]/2 ~= 0.914213562373095 */ \
+  OD_DCT_OVERFLOW_CHECK(t1, 7489, 4096, 106); \
+  t2 -= (t1*7489 + 4096) >> 13; \
+  /* 11585/16384 ~= Sin[Pi/4] ~= 0.707106781186548 */ \
+  OD_DCT_OVERFLOW_CHECK(t1, 11585, 8192, 107); \
+  t1 += (t2*11585 + 8192) >> 14; \
+  /* -19195/32768 ~= Tan[Pi/8] - Tan[Pi/4] ~= -0.585786437626905 */ \
+  OD_DCT_OVERFLOW_CHECK(t1, 19195, 16384, 108); \
+  t2 += (t1*19195 + 16384) >> 15; \
+  t3 += OD_DCT_RSHIFT(t2, 1); \
+  t2 -= t3; \
+  t1 = t0h - t1; \
+  t0 -= t1; \
+  /* 6723/8192 ~= Tan[7*Pi/32] ~= 0.820678790828660 */ \
+  OD_DCT_OVERFLOW_CHECK(t0, 6723, 4096, 109); \
+  t3 += (t0*6723 + 4096) >> 13; \
+  /* 8035/8192 ~= Sin[7*Pi/16] ~= 0.980785280403230 */ \
+  OD_DCT_OVERFLOW_CHECK(t3, 8035, 4096, 110); \
+  t0 -= (t3*8035 + 4096) >> 13; \
+  /* 6723/8192 ~= Tan[7*Pi/32] ~= 0.820678790828660 */ \
+  OD_DCT_OVERFLOW_CHECK(t0, 6723, 4096, 111); \
+  t3 += (t0*6723 + 4096) >> 13; \
+  /* 8757/16384 ~= Tan[5*Pi/32] ~= 0.534511135950792 */ \
+  OD_DCT_OVERFLOW_CHECK(t1, 8757, 8192, 112); \
+  t2 += (t1*8757 + 8192) >> 14; \
+  /* 6811/8192 ~= Sin[5*Pi/16] ~= 0.831469612302545 */ \
+  OD_DCT_OVERFLOW_CHECK(t2, 6811, 4096, 113); \
+  t1 -= (t2*6811 + 4096) >> 13; \
+  /* 8757/16384 ~= Tan[5*Pi/32] ~= 0.534511135950792 */ \
+  OD_DCT_OVERFLOW_CHECK(t1, 8757, 8192, 114); \
+  t2 += (t1*8757 + 8192) >> 14; \
+} \
+while (0)
+
+#define OD_FDCT_8(r0, r4, r2, r6, r1, r5, r3, r7) \
+  /* Embedded 8-point orthonormal Type-II fDCT. */ \
+do { \
+  int r4h; \
+  int r5h; \
+  int r6h; \
+  int r7h; \
+  r7 = r0 - r7; \
+  r7h = OD_DCT_RSHIFT(r7, 1); \
+  r0 -= r7h; \
+  r6 += r1; \
+  r6h = OD_DCT_RSHIFT(r6, 1); \
+  r1 = r6h - r1; \
+  r5 = r2 - r5; \
+  r5h = OD_DCT_RSHIFT(r5, 1); \
+  r2 -= r5h; \
+  r4 += r3; \
+  r4h = OD_DCT_RSHIFT(r4, 1); \
+  r3 = r4h - r3; \
+  OD_FDCT_4_ASYM(r0, r4, r4h, r2, r6, r6h); \
+  OD_FDST_4_ASYM(r7, r7h, r3, r5, r1); \
+} \
+while (0)
+
+void fdct8(const tran_low_t *x, tran_low_t *y) {
+  int t0;
+  int t1;
+  int t2;
+  int t3;
+  int t4;
+  int t5;
+  int t6;
+  int t7;
+  t0 = x[0];
+  t4 = x[1];
+  t2 = x[2];
+  t6 = x[3];
+  t1 = x[4];
+  t5 = x[5];
+  t3 = x[6];
+  t7 = x[7];
+  OD_FDCT_8(t0, t4, t2, t6, t1, t5, t3, t7);
+  y[0] = (tran_low_t)t0;
+  y[1] = (tran_low_t)t1;
+  y[2] = (tran_low_t)t2;
+  y[3] = (tran_low_t)t3;
+  y[4] = (tran_low_t)t4;
+  y[5] = (tran_low_t)t5;
+  y[6] = (tran_low_t)t6;
+  y[7] = (tran_low_t)t7;
+}
+#endif
 
 static void fdct16(const tran_low_t *input, tran_low_t *output) {
   tran_high_t temp;
@@ -1990,9 +2125,11 @@ void av1_fdct8x8_quant_c(const int16_t *input, int stride,
 
 void av1_fht8x8_c(const int16_t *input, tran_low_t *output, int stride,
                   int tx_type) {
+#if !CONFIG_USE_C_TX
   if (tx_type == DCT_DCT) {
     aom_fdct8x8_c(input, output, stride);
   } else {
+#endif
     static const transform_2d FHT[] = {
       { fdct8, fdct8 },    // DCT_DCT
       { fadst8, fdct8 },   // ADST_DCT
@@ -2037,7 +2174,9 @@ void av1_fht8x8_c(const int16_t *input, tran_low_t *output, int stride,
       for (j = 0; j < 8; ++j)
         output[j + i * 8] = (temp_out[j] + (temp_out[j] < 0)) >> 1;
     }
+#if !CONFIG_USE_C_TX
   }
+#endif
 }
 
 /* 4-point reversible, orthonormal Walsh-Hadamard in 3.5 adds, 0.5 shifts per
