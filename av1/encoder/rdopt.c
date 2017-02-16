@@ -1887,6 +1887,11 @@ static int64_t choose_tx_size_fix_type(const AV1_COMP *const cpi, BLOCK_SIZE bs,
   }
 #endif  // CONFIG_EXT_TX && CONFIG_RECT_TX
 
+#if CONFIG_LIMIT_8X8
+  best_tx_size = TX_8X8;
+  start_tx = TX_4X4;
+  end_tx = TX_8X8;
+#endif
   last_rd = INT64_MAX;
   for (n = start_tx; n >= end_tx; --n) {
     RD_STATS this_rd_stats;

@@ -288,6 +288,7 @@ EXPERIMENT_LIST="
     pvq
     daala_tx
     limit_4x4
+    limit_8x8
     dct_only
     use_c_tx
     cb4x4
@@ -494,6 +495,9 @@ post_process_cmdline() {
 
     # Enable USE_C_ONLY if LIMIT_4X4 enabled
     enabled limit_4x4 && enable_feature use_c_tx
+
+    # Enable USE_C_ONLY if LIMIT_8X8 enabled
+    enabled limit_8x8 && enable_feature use_c_tx
 
     # Fix up experiment dependencies
     enabled ec_adapt && enable_feature ec_multisymbol

@@ -4668,7 +4668,9 @@ static void encode_rd_sb_row(AV1_COMP *cpi, ThreadData *td,
       TX_SIZE t;
       SUBFRAME_STATS *subframe_stats = &cpi->subframe_stats;
 
-#if CONFIG_LIMIT_4X4
+#if CONFIG_LIMIT_8X8
+      for (t = TX_4X4; t <= TX_8X8; ++t)
+#elif CONFIG_LIMIT_4X4
       for (t = TX_4X4; t <= TX_4X4; ++t)
 #else
       for (t = 0; t < TX_SIZES; ++t)

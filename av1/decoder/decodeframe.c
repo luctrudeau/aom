@@ -465,7 +465,9 @@ static int av1_pvq_decode_helper2(AV1_COMMON *cm, MACROBLOCKD *const xd,
       for (i = 0; i < tx_blk_size; i++) {
         pred[diff_stride * j + i] = dst[pd->dst.stride * j + i];
       }
-#if CONFIG_LIMIT_4X4
+#if CONFIG_LIMIT_8X8
+    assert(tx_size <= TX_8X8);
+#elif CONFIG_LIMIT_4X4
     assert(tx_size == TX_4X4);
 #endif
 #if CONFIG_DCT_ONLY
@@ -521,8 +523,10 @@ static void predict_and_reconstruct_intra_block(
 #if CONFIG_DCT_ONLY
   assert(mbmi->tx_type == DCT_DCT);
 #endif
-#if CONFIG_LIMIT_4X4
-  assert(mbmi->tx_size == TX_4X4);
+#if CONFIG_LIMIT_8X8
+    assert(tx_size <= TX_8X8);
+#elif CONFIG_LIMIT_4X4
+    assert(tx_size == TX_4X4);
 #endif
   if (!mbmi->skip) {
     TX_TYPE tx_type = get_tx_type(plane_type, xd, block_idx, tx_size);

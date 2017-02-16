@@ -4863,8 +4863,10 @@ static void encode_frame_to_data_rate(AV1_COMP *cpi, size_t *size,
 
   av1_update_reference_frames(cpi);
 
-#if CONFIG_LIMIT_4X4
-  for (t = 0; t <= TX_4X4; t++)
+#if CONFIG_LIMIT_8X8
+  for (t = TX_4X4; t <= TX_8X8; ++t)
+#elif CONFIG_LIMIT_4X4
+  for (t = TX_4X4; t <= TX_4X4; ++t)
 #else
   for (t = 0; t < TX_SIZES; t++)
 #endif
