@@ -490,7 +490,10 @@ post_process_cmdline() {
     ! enabled ans && soft_enable daala_ec
 
     # Enable USE_C_ONLY if DAALA_TX enabled
-    enabled use_c_only && enable_feature daala_tx
+    enabled daala_tx && enable_feature use_c_tx
+
+    # Enable USE_C_ONLY if LIMIT_4X4 enabled
+    enabled limit_4x4 && enable_feature use_c_tx
 
     # Fix up experiment dependencies
     enabled ec_adapt && enable_feature ec_multisymbol
