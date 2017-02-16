@@ -104,6 +104,14 @@ void cfl_load_predictor(CFL_CONTEXT *const cfl, int blk_row, int blk_col,
 
   y_coeff = &cfl->y_coeff[coeff_offset];
 
+  for (j = 0; j < uv_tx_size; j++) {
+    for (i = 0; i < uv_tx_size; i++) {
+      // Scale coefficients as the inverse transform is half the size of the
+      // forward transform
+      ref_coeff[k++] = y_coeff[MAX_SB_SIZE * j + i] >> shift;
+    }
+  }
+
   if (y_tx_blk_size > uv_tx_size) {
     // When the CfL prediction is bigger than what is needed, we only take the
     // part that is needed.
@@ -187,38 +195,24 @@ void cfl_store_predictor(CFL_CONTEXT *const cfl, int blk_row, int blk_col,
       assert(0);
   }
 
-  if (tx_type != DCT_DCT) {
-    INV_TXFM_PARAM inv_txfm_param;
-    FWD_TXFM_PARAM fwd_txfm_param;
+  //if (tx_type != DCT_DCT) {
+  INV_TXFM_PARAM inv_txfm_param;
 
-    // Perform the inverse transform
-    inv_txfm_param.tx_type = tx_type;
-    inv_txfm_param.tx_size = tx_size;
-    // FIXME
-    inv_txfm_param.eob = tx_blk_size * tx_blk_size;
-    // FIXME Zero for now!
-    inv_txfm_param.lossless = 0;
-    memset(cfl->buf_idct_uint8, 0, sizeof(uint8_t) * MAX_SB_SQUARE);
-    inv_txfm_add(src, cfl->buf_idct_uint8, tx_blk_size, &inv_txfm_param);
+  // Perform the inverse transform
+  inv_txfm_param.tx_type = tx_type;
+  inv_txfm_param.tx_size = tx_size;
+  // FIXME
+  inv_txfm_param.eob = tx_blk_size * tx_blk_size;
+  // FIXME Zero for now!
+  inv_txfm_param.lossless = 0;
+  memset(cfl->buf_idct_uint8, 0, sizeof(uint8_t) * MAX_SB_SQUARE);
+  inv_txfm_add(src, cfl->buf_idct_uint8, tx_blk_size, &inv_txfm_param);
 
-    for (i = 0; i < tx_blk_size * tx_blk_size; i++) {
-      cfl->buf_idct_uint16[i] = cfl->buf_idct_uint8[i];
-    }
-
-    // Forward transform to DCT_DCT
-    fwd_txfm_param.tx_type = DCT_DCT;
-    fwd_txfm_param.tx_size = tx_size;
-    fwd_txfm_param.fwd_txfm_opt = FWD_TXFM_OPT_NORMAL;
-    fwd_txfm_param.rd_transform = 0;
-    // FIXME Zero for now!
-    fwd_txfm_param.lossless = 0;
-    fwd_txfm(cfl->buf_idct_uint16, cfl->buf_fdct, tx_blk_size, &fwd_txfm_param);
-    src = cfl->buf_fdct;
-  }
+  //src = cfl_buf_idct;
 
   for (j = 0; j < tx_blk_size; j++) {
     for (i = 0; i < tx_blk_size; i++) {
-      y_coeff[j * MAX_SB_SIZE + i] = src[k++];
+      y_coeff[j * MAX_SB_SIZE + i] = cfl->buf_idct_uint8[k++];
     }
   }
 }

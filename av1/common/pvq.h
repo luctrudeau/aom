@@ -16,6 +16,10 @@
 # include "generic_code.h"
 # include "odintrin.h"
 
+#if !defined(M_PI)
+#define M_PI (3.141592653589793238462643)
+#endif
+
 extern const int OD_QM8_Q4_FLAT[];
 extern const int OD_QM8_Q4_HVS[];
 
