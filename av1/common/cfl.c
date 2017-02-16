@@ -83,13 +83,15 @@ void cfl_load_predictor(CFL_CONTEXT *const cfl, int blk_row, int blk_col,
 
   const int scale = 4; // Needs to be adjusted to support 4:4:4
   const int y_tx_blk_size = tx_size_wide[cfl->y_tx_size];
+  const int uv_tx_blk_size = tx_size_wide[uv_tx_size];
+
   const tran_low_t *y_coeff;
   const tran_low_t dc = ref_coeff[0];
   int coeff_offset;
 
   // Check that tx_sizes are valid.
   assert(y_tx_blk_size > 0 && y_tx_blk_size <= MAX_TX_SIZE);
-  assert(uv_tx_size > 0 && uv_tx_size <= MAX_TX_SIZE);
+  assert(uv_tx_blk_size > 0 && uv_tx_blk_size <= MAX_TX_SIZE);
 
   // Adjusting row and cols for 4:2:0. It is important to note that the
   // prediction is always the first AC coeffs (not the collocated coeffs).
@@ -100,23 +102,29 @@ void cfl_load_predictor(CFL_CONTEXT *const cfl, int blk_row, int blk_col,
 
   // Check that the last coeff offset is smaller than the max superblock size
   assert(coeff_offset
-      + ((uv_tx_size-1) * MAX_SB_SIZE + (uv_tx_size-1)) < MAX_SB_SQUARE);
+      + ((uv_tx_blk_size-1) * MAX_SB_SIZE + (uv_tx_blk_size-1)) < MAX_SB_SQUARE);
 
   y_coeff = &cfl->y_coeff[coeff_offset];
 
-  for (j = 0; j < uv_tx_size; j++) {
-    for (i = 0; i < uv_tx_size; i++) {
+  // When the CfL prediction is bigger than what is needed, we only take the
+  // part that is needed.
+  int shift = (y_tx_blk_size / uv_tx_blk_size) >> 1;
+  int i, j, k = 0;
+  FWD_TXFM_PARAM fwd_txfm_param;
+  fwd_txfm_param.tx_type = DCT_DCT;
+  fwd_txfm_param.tx_size = uv_tx_size;
+  fwd_txfm_param.lossless = 0;
+  fwd_txfm(y_coeff, &cfl->buf_fdct, MAX_SB_SIZE, &fwd_txfm_param);
+
+  for (j = 0; j < uv_tx_blk_size; j++) {
+    for (i = 0; i < uv_tx_blk_size; i++) {
       // Scale coefficients as the inverse transform is half the size of the
       // forward transform
       ref_coeff[k++] = y_coeff[MAX_SB_SIZE * j + i] >> shift;
     }
   }
 
-  if (y_tx_blk_size > uv_tx_size) {
-    // When the CfL prediction is bigger than what is needed, we only take the
-    // part that is needed.
-    int shift = (y_tx_blk_size / uv_tx_size) >> 1;
-    int i, j, k = 0;
+  /*if (y_tx_blk_size > uv_tx_size) {
 
     // 1 and 2 are the only scale changes supported for now.
     assert(shift == 1 || shift == 2);
@@ -131,10 +139,11 @@ void cfl_load_predictor(CFL_CONTEXT *const cfl, int blk_row, int blk_col,
         ref_coeff[k++] = y_coeff[MAX_SB_SIZE * j + i] >> shift;
       }
     }
+
   } else {
     tf_merge_and_subsample(cfl, ref_coeff, uv_tx_size, y_coeff, MAX_SB_SIZE,
         y_tx_blk_size, uv_tx_size);
-  }
+  } */
   // CfL does not apply to dc (only ac)
   ref_coeff[0] = dc;
 }

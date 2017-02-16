@@ -500,7 +500,7 @@ static int av1_pvq_decode_helper2_cfl(MACROBLOCKD *const xd,
 
   if (plane != 0) {
     // Replace Intra prediction with CfL for ACs
-    cfl_load_predictor(cfl, row, col, pvq_ref_coeff, tx_blk_size);
+    cfl_load_predictor(cfl, row, col, pvq_ref_coeff, tx_size);
   }
 
   if (ac_dc_coded) {

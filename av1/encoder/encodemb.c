@@ -539,8 +539,8 @@ void av1_xform_quant(const AV1_COMMON *cm, MACROBLOCK *x, int plane, int block,
 
 #if CONFIG_CFL
   CFL_CONTEXT *const cfl = xd->cfl;
-  int ac_dc_coded = 0;
 #endif
+  int ac_dc_coded = 0;
 
   (void)scan_order;
   (void)qcoeff;
@@ -620,7 +620,7 @@ void av1_xform_quant(const AV1_COMMON *cm, MACROBLOCK *x, int plane, int block,
       } else {
         assert(x->cfl_stored_y == 1);
       }
-      cfl_load_predictor(cfl, blk_row, blk_col, ref_coeff, tx_blk_size);
+      cfl_load_predictor(cfl, blk_row, blk_col, ref_coeff, tx_size);
     }
 #endif
     ac_dc_coded = av1_pvq_encode_helper(&x->daala_enc,
