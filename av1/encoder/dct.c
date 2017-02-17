@@ -187,7 +187,7 @@ void fdct8(const tran_low_t *input, tran_low_t *output) {
   step[4] = output[4];
   temp = output[5] * -cospi_16_64 + output[6] * cospi_16_64;
   step[5] = (tran_low_t)fdct_round_shift(temp);
-  temp = output[6] * cospi_17_64 + output[5] * cospi_16_64;
+  temp = output[6] * cospi_16_64 + output[5] * cospi_16_64;
   step[6] = (tran_low_t)fdct_round_shift(temp);
   step[7] = output[7];
 
