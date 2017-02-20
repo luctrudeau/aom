@@ -586,6 +586,14 @@ void av1_xform_quant(const AV1_COMMON *cm, MACROBLOCK *x, int plane, int block,
     for (i = 0; i < tx_blk_size; i++) {
       pred[diff_stride * j + i] = dst[dst_stride * j + i];
     }
+
+
+#if CONFIG_PVQ_CFL
+  // CfL only predicts AC coeffs, the DC must come from DC_PRED
+  if (plane == PLANE_TYPE_UV)
+    assert(mbmi->uv_mode == DC_PRED);
+#endif
+
 #endif
 
   (void)ctx;

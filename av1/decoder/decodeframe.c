@@ -453,6 +453,11 @@ static int av1_pvq_decode_helper2(AV1_COMMON *cm, MACROBLOCKD *const xd,
   eob = 0;
   dst = &pd->dst.buf[4 * row * pd->dst.stride + 4 * col];
 
+#if CONFIG_PVQ_CFL
+  // CfL only predicts AC coeffs, the DC must come from DC_PRED
+  if (plane == PLANE_TYPE_UV)
+    assert(mbmi->uv_mode == DC_PRED);
+#endif
   if (ac_dc_coded) {
     int xdec = pd->subsampling_x;
     int seg_id = mbmi->segment_id;
