@@ -116,6 +116,7 @@ static PREDICTION_MODE read_intra_mode_y(AV1_COMMON *cm, MACROBLOCKD *xd,
   return y_mode;
 }
 
+#if !CONFIG_PVQ_CFL
 static PREDICTION_MODE read_intra_mode_uv(AV1_COMMON *cm, MACROBLOCKD *xd,
                                           aom_reader *r,
                                           PREDICTION_MODE y_mode) {
@@ -138,6 +139,7 @@ static PREDICTION_MODE read_intra_mode_uv(AV1_COMMON *cm, MACROBLOCKD *xd,
   if (counts) ++counts->uv_mode[y_mode][uv_mode];
   return uv_mode;
 }
+#endif
 
 #if CONFIG_EXT_INTER
 static INTERINTRA_MODE read_interintra_mode(AV1_COMMON *cm, MACROBLOCKD *xd,
@@ -908,7 +910,12 @@ static void read_intra_frame_mode_info(AV1_COMMON *const cm,
   }
 #endif
 
+#if CONFIG_PVQ_CFL
+  // PVQ_CFL does not write uv mode to the bitstream
+  mbmi->uv_mode = DC_PRED;
+#else
   mbmi->uv_mode = read_intra_mode_uv(cm, xd, r, mbmi->mode);
+#endif
 #if CONFIG_EXT_INTRA
   read_intra_angle_info(cm, xd, r);
 #endif  // CONFIG_EXT_INTRA
@@ -1227,8 +1234,13 @@ static void read_intra_block_mode_info(AV1_COMMON *const cm,
       mbmi->mode = read_intra_mode_y(cm, xd, r, size_group_lookup[bsize]);
   }
 #endif
-
+#if CONFIG_PVQ_CFL
+  // PVQ_CFL does not write uv mode to the bitstream
+  mbmi->uv_mode = DC_PRED;
+#else
   mbmi->uv_mode = read_intra_mode_uv(cm, xd, r, mbmi->mode);
+#endif
+
 #if CONFIG_EXT_INTRA
   read_intra_angle_info(cm, xd, r);
 #endif  // CONFIG_EXT_INTRA
