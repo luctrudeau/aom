@@ -1004,6 +1004,7 @@ void av1_encode_block_intra(int plane, int block, int blk_row, int blk_col,
                           mode, dst, dst_stride, dst, dst_stride, blk_col,
                           blk_row, plane);
 
+#if !CONFIG_PVQ
   if (check_subtract_block_size(tx1d_width, tx1d_height)) {
 #if CONFIG_AOM_HIGHBITDEPTH
     if (xd->cur_buf->flags & YV12_FLAG_HIGHBITDEPTH) {
@@ -1032,6 +1033,7 @@ void av1_encode_block_intra(int plane, int block, int blk_row, int blk_col,
                        src_stride, dst, dst_stride);
 #endif  // CONFIG_AOM_HIGHBITDEPTH
   }
+#endif
 
   a = &args->ta[blk_col];
   l = &args->tl[blk_row];
