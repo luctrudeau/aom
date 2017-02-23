@@ -357,6 +357,7 @@ static int pvq_theta(od_coeff *out, const od_coeff *x0, const od_coeff *r0,
   od_val16 r16[MAXN];
   int xshift;
   int rshift;
+
   /* Give more weight to gain error when calculating the total distortion. */
   gain_weight = 1.0;
   OD_ASSERT(n > 1);
@@ -387,7 +388,11 @@ static int pvq_theta(od_coeff *out, const od_coeff *x0, const od_coeff *r0,
 #endif
     corr += OD_MULT16_16(x16[i], r16[i]);
   }
+#if CONFIG_PVQ_CFL
+  cfl_enabled = pli != 0;
+#else
   cfl_enabled = is_keyframe && pli != 0 && !OD_DISABLE_CFL;
+#endif
   cg  = od_pvq_compute_gain(x16, n, q0, &g, beta, xshift);
   cgr = od_pvq_compute_gain(r16, n, q0, &gr, beta, rshift);
   if (cfl_enabled) cgr = OD_CGAIN_SCALE;
@@ -848,6 +853,8 @@ PVQ_SKIP_TYPE od_pvq_encode(daala_enc_ctx *enc,
   for (i = 0; i < nb_bands; i++) size[i] = off[i+1] - off[i];
   skip_diff = 0;
   flip = 0;
+#if !CONFIG_PVQ_CFL
+  // TODO(ltrudeau) enable cfl flip after adding RDO
   /*If we are coding a chroma block of a keyframe, we are doing CfL.*/
   if (pli != 0 && is_keyframe) {
     od_val32 xy;
@@ -864,7 +871,7 @@ PVQ_SKIP_TYPE od_pvq_encode(daala_enc_ctx *enc,
       inq = in[i]*qm[i];
       xy += OD_SHR(rq*(int64_t)inq, OD_SHL(OD_QM_SHIFT + OD_CFL_FLIP_SHIFT,
        1));
-#endif
+#endif  // defined(OD_FLOAT_PVQ)
     }
     /*If cos(theta) < 0, then |theta| > pi/2 and we should negate the ref.*/
     if (xy < 0) {
@@ -872,6 +879,7 @@ PVQ_SKIP_TYPE od_pvq_encode(daala_enc_ctx *enc,
       for(i = off[0]; i < off[nb_bands]; i++) ref[i] = -ref[i];
     }
   }
+#endif
   for (i = 0; i < nb_bands; i++) {
     int q;
 
