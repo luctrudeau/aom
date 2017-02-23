@@ -1206,6 +1206,7 @@ PVQ_SKIP_TYPE av1_pvq_encode_helper(
   int has_dc_skip = 1;
   int i;
   int off = od_qm_offset(tx_size, plane ? 1 : 0);
+  const int is_keyframe = 0;
 
   DECLARE_ALIGNED(16, tran_low_t, coeff_pvq[OD_TXSIZE_MAX * OD_TXSIZE_MAX]);
   DECLARE_ALIGNED(16, tran_low_t, ref_coeff_pvq[OD_TXSIZE_MAX * OD_TXSIZE_MAX]);
@@ -1258,7 +1259,7 @@ PVQ_SKIP_TYPE av1_pvq_encode_helper(
       quant[1] << (OD_COEFF_SHIFT - 3),  // scale/quantizer
       plane, tx_size, OD_PVQ_BETA[use_activity_masking][plane][tx_size],
       OD_ROBUST_STREAM,
-      0,        // is_keyframe,
+      is_keyframe,
       0, 0, 0,  // q_scaling, bx, by,
       daala_enc->state.qm + off, daala_enc->state.qm_inv + off,
       speed,  // speed

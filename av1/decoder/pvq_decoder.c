@@ -217,7 +217,11 @@ static void pvq_decode_partition(aom_reader *r,
     od_val32 cgr;
     int icgr;
     int cfl_enabled;
+#if CONFIG_PVQ_CFL
+    cfl_enabled = pli != 0;
+#else
     cfl_enabled = pli != 0 && is_keyframe && !OD_DISABLE_CFL;
+#endif
     cgr = od_pvq_compute_gain(ref16, n, q0, &gr, beta, rshift);
     if (cfl_enabled) cgr = OD_CGAIN_SCALE;
 #if defined(OD_FLOAT_PVQ)
@@ -346,7 +350,12 @@ void od_pvq_decode(daala_dec_ctx *dec,
     for (i = 0; i < nb_bands; i++) size[i] = off[i+1] - off[i];
     cfl.ref = ref;
     cfl.nb_coeffs = off[nb_bands];
+#if CONFIG_PVQ_CFL
+    // TODO(ltrudeau) Enable allow_flip after CfL RDO code integration
+    cfl.allow_flip = 0;
+#else
     cfl.allow_flip = pli != 0 && is_keyframe;
+#endif
     for (i = 0; i < nb_bands; i++) {
       int q;
 
