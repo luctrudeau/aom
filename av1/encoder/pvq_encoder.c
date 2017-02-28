@@ -416,8 +416,8 @@ static int pvq_theta(od_coeff *out, const od_coeff *x0, const od_coeff *r0,
   s = 1;
   corr = corr/(1e-100 + g*(double)gr/OD_SHL(1, xshift + rshift));
   corr = OD_MAXF(OD_MINF(corr, 1.), -1.);
-  // Let's enable this for luma
-  is_keyframe = pli == 0;
+  // Let's enable this for Chroma
+  is_keyframe = pli != 0;
   if (is_keyframe) skip_dist = gain_weight*cg*cg*OD_CGAIN_SCALE_2;
   else {
     skip_dist = gain_weight*(cg - cgr)*(cg - cgr)
