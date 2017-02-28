@@ -558,7 +558,7 @@ static int pvq_theta(od_coeff *out, const od_coeff *x0, const od_coeff *r0,
   if (n <= OD_MAX_PVQ_SIZE &&
       // ltrudeau: Let's assume that only luma intra prediction on keyframe
       // is also unreliable.
-   ((pli == 0) || corr < .5
+   ((pli != 0) || corr < .5
 
    || cg < (od_val32)(OD_SHL(2, OD_CGAIN_SHIFT)))) {
     int gain_bound;
