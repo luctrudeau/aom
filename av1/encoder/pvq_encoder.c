@@ -556,7 +556,9 @@ static int pvq_theta(od_coeff *out, const od_coeff *x0, const od_coeff *r0,
      correlation. The only exception is luma on a keyframe because
      H/V prediction is unreliable. */
   if (n <= OD_MAX_PVQ_SIZE &&
-   ((is_keyframe && pli == 0) || corr < .5
+      // ltrudeau: Let's assume that intra prediction on keyframe is also unreliable
+   ((1/*is_keyframe && pli == 0*/) || corr < .5
+
    || cg < (od_val32)(OD_SHL(2, OD_CGAIN_SHIFT)))) {
     int gain_bound;
     int prev_k;
