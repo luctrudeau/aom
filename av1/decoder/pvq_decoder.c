@@ -342,8 +342,8 @@ void od_pvq_decode(daala_dec_ctx *dec,
   off = &OD_BAND_OFFSETS[bs][1];
   out[0] = ac_dc_coded & DC_CODED;
   if (ac_dc_coded < AC_CODED) {
-    // Enable only for Chroma
-    if (pli != 0) for (i = 1; i < 1 << (2*bs + 4); i++) out[i] = 0;
+    // Enable only for Luma
+    if (pli == 0) for (i = 1; i < 1 << (2*bs + 4); i++) out[i] = 0;
     else for (i = 1; i < 1 << (2*bs + 4); i++) out[i] = ref[i];
   }
   else {
