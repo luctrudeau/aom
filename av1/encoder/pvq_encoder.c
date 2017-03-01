@@ -1053,8 +1053,8 @@ PVQ_SKIP_TYPE od_pvq_encode(daala_enc_ctx *enc,
        by >> (OD_TXSIZES - 1), skip);
     }
 #endif
-    // Enable only for Luma
-    if (plane == 0/*is_keyframe*/) for (i = 1; i < 1 << (2*bs + 4); i++) out[i] = 0;
+    // Enable only for Chroma
+    if (pli != 0/*is_keyframe*/) for (i = 1; i < 1 << (2*bs + 4); i++) out[i] = 0;
     else for (i = 1; i < 1 << (2*bs + 4); i++) out[i] = ref[i];
   }
   if (pvq_info)
