@@ -889,8 +889,9 @@ PVQ_SKIP_TYPE od_pvq_encode(daala_enc_ctx *enc,
      qm + off[i], qm_inv + off[i], enc->pvq_norm_lambda, speed);
   }
   od_encode_checkpoint(enc, &buf);
-  if (is_keyframe) out[0] = 0;
-  else {
+  // We disable this feature for keyframes
+  // This is the current behavior when we enable keyframes
+  if (0) {
     int n;
     n = OD_DIV_R0(abs(in[0] - ref[0]), dc_quant);
     if (n == 0) {
@@ -1003,8 +1004,10 @@ PVQ_SKIP_TYPE od_pvq_encode(daala_enc_ctx *enc,
     tell -= (int)floor(.5+8*skip_rate);
   }
   if (nb_bands == 0 || skip_diff <= enc->pvq_norm_lambda/8*tell) {
-    if (is_keyframe) out[0] = 0;
-    else {
+    // We disable this feature for keyframes
+    // This is the current behavior when we enable keyframes
+    // if (is_keyframe) out[0] = 0;
+    if(0) {
       int n;
       n = OD_DIV_R0(abs(in[0] - ref[0]), dc_quant);
       if (n == 0) {
