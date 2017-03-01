@@ -417,7 +417,7 @@ static int pvq_theta(od_coeff *out, const od_coeff *x0, const od_coeff *r0,
   corr = corr/(1e-100 + g*(double)gr/OD_SHL(1, xshift + rshift));
   corr = OD_MAXF(OD_MINF(corr, 1.), -1.);
   // Let's enable this for Chroma
-  is_keyframe = pli != 0;
+  is_keyframe = 1;
   if (is_keyframe) skip_dist = gain_weight*cg*cg*OD_CGAIN_SCALE_2;
   else {
     skip_dist = gain_weight*(cg - cgr)*(cg - cgr)
@@ -1006,8 +1006,7 @@ PVQ_SKIP_TYPE od_pvq_encode(daala_enc_ctx *enc,
     tell -= (int)floor(.5+8*skip_rate);
   }
   if (nb_bands == 0 || skip_diff <= enc->pvq_norm_lambda/8*tell) {
-    if (is_keyframe) out[0] = 0;
-    else {
+    if (!0/*is_keyframe*/) {
       int n;
       n = OD_DIV_R0(abs(in[0] - ref[0]), dc_quant);
       if (n == 0) {
@@ -1056,7 +1055,7 @@ PVQ_SKIP_TYPE od_pvq_encode(daala_enc_ctx *enc,
        by >> (OD_TXSIZES - 1), skip);
     }
 #endif
-    if (is_keyframe) for (i = 1; i < 1 << (2*bs + 4); i++) out[i] = 0;
+    if (1/*is_keyframe*/) for (i = 1; i < 1 << (2*bs + 4); i++) out[i] = 0;
     else for (i = 1; i < 1 << (2*bs + 4); i++) out[i] = ref[i];
   }
   if (pvq_info)

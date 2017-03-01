@@ -342,7 +342,7 @@ void od_pvq_decode(daala_dec_ctx *dec,
   off = &OD_BAND_OFFSETS[bs][1];
   out[0] = ac_dc_coded & DC_CODED;
   if (ac_dc_coded < AC_CODED) {
-    if (is_keyframe) for (i = 1; i < 1 << (2*bs + 4); i++) out[i] = 0;
+    if (1/*is_keyframe*/) for (i = 1; i < 1 << (2*bs + 4); i++) out[i] = 0;
     else for (i = 1; i < 1 << (2*bs + 4); i++) out[i] = ref[i];
   }
   else {
