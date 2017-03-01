@@ -889,8 +889,8 @@ PVQ_SKIP_TYPE od_pvq_encode(daala_enc_ctx *enc,
      qm + off[i], qm_inv + off[i], enc->pvq_norm_lambda, speed);
   }
   od_encode_checkpoint(enc, &buf);
-  // We enable this feature for the luma plane of keyframes
-  if (pli == 0) {
+  // We enable this feature for the chroma plane of keyframes
+  if (pli != 0) {
     int n;
     n = OD_DIV_R0(abs(in[0] - ref[0]), dc_quant);
     if (n == 0) {
@@ -1003,9 +1003,9 @@ PVQ_SKIP_TYPE od_pvq_encode(daala_enc_ctx *enc,
     tell -= (int)floor(.5+8*skip_rate);
   }
   if (nb_bands == 0 || skip_diff <= enc->pvq_norm_lambda/8*tell) {
-    // We enable this feature for the luma plane of keyframes
+    // We enable this feature for the chroma plane of keyframes
     // if (is_keyframe) out[0] = 0;
-    if(pli == 0) {
+    if(pli != 0) {
       int n;
       n = OD_DIV_R0(abs(in[0] - ref[0]), dc_quant);
       if (n == 0) {
