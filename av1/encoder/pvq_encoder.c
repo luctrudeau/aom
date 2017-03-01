@@ -1053,8 +1053,8 @@ PVQ_SKIP_TYPE od_pvq_encode(daala_enc_ctx *enc,
        by >> (OD_TXSIZES - 1), skip);
     }
 #endif
-    // This is what happens when we enable is_keyframe
-    if (1/*is_keyframe*/) for (i = 1; i < 1 << (2*bs + 4); i++) out[i] = 0;
+    // Enable only for Luma
+    if (plane == 0/*is_keyframe*/) for (i = 1; i < 1 << (2*bs + 4); i++) out[i] = 0;
     else for (i = 1; i < 1 << (2*bs + 4); i++) out[i] = ref[i];
   }
   if (pvq_info)
