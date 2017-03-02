@@ -347,6 +347,7 @@ static int pvq_theta(od_coeff *out, const od_coeff *x0, const od_coeff *r0,
   double skip_dist;
   int cfl_enabled;
   int skip;
+  int skip_can_copy;
   double gain_weight;
   od_val16 x16[MAXN];
   od_val16 r16[MAXN];
@@ -383,6 +384,7 @@ static int pvq_theta(od_coeff *out, const od_coeff *x0, const od_coeff *r0,
     corr += OD_MULT16_16(x16[i], r16[i]);
   }
   cfl_enabled = is_keyframe && pli != 0 && !OD_DISABLE_CFL;
+  skip_can_copy = !cfl_enabled;
   cg  = od_pvq_compute_gain(x16, n, q0, &g, beta, xshift);
   cgr = od_pvq_compute_gain(r16, n, q0, &gr, beta, rshift);
   if (cfl_enabled) cgr = OD_CGAIN_SCALE;
