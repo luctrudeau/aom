@@ -547,8 +547,8 @@ void av1_xform_quant(const AV1_COMMON *cm, MACROBLOCK *x, int plane, int block,
 #endif  // CONFIG_AOM_QM
 #else
   /*If we are coding a chroma block of a keyframe, we are doing CfL.*/
-  int cfl_enabled =
-      cm->frame_type == KEY_FRAME && plane != 0 && !OD_DISABLE_CFL;
+  int cfl_enabled = plane != 0;
+      /*cm->frame_type == KEY_FRAME && plane != 0 && !OD_DISABLE_CFL;*/
   MB_MODE_INFO *mbmi = &xd->mi[0]->mbmi;
   tran_low_t *ref_coeff = BLOCK_OFFSET(pd->pvq_ref_coeff, block);
   int skip = 1;

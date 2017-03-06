@@ -844,7 +844,7 @@ PVQ_SKIP_TYPE od_pvq_encode(daala_enc_ctx *enc,
   skip_diff = 0;
   flip = 0;
   is_skip_copy = !cfl_enabled;
-  if (cfl_enabled) {
+  if (0 /*cfl_enabled*/) {
     od_val32 xy;
     xy = 0;
     /*Compute the dot-product of the first band of chroma with the luma ref.*/

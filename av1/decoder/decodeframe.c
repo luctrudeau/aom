@@ -442,8 +442,8 @@ static int av1_pvq_decode_helper2(AV1_COMMON *cm, MACROBLOCKD *const xd,
                                   MB_MODE_INFO *const mbmi, int plane, int row,
                                   int col, TX_SIZE tx_size, TX_TYPE tx_type) {
   struct macroblockd_plane *const pd = &xd->plane[plane];
-  int cfl_enabled =
-      cm->frame_type == KEY_FRAME && plane != 0 && !OD_DISABLE_CFL;
+  int cfl_enabled = plane != 0;
+      /*cm->frame_type == KEY_FRAME && plane != 0 && !OD_DISABLE_CFL;*/
   // transform block size in pixels
   int tx_blk_size = tx_size_wide[tx_size];
   int i, j;
