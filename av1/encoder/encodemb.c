@@ -1275,7 +1275,7 @@ void av1_pvq_encode_helper(daala_enc_ctx *daala_enc, tran_low_t *const coeff,
   }
   if (plane != 0) {
     save_pvq_lambda = daala_enc->pvq_norm_lambda;
-    daala_enc->pvq_norm_lambda *= 1.1;
+    daala_enc->pvq_norm_lambda *= 1.2;
   }
 
   if (abs(in_int32[0] - ref_int32[0]) < pvq_dc_quant * 141 / 256) { /* 0.55 */
