@@ -1232,6 +1232,7 @@ void av1_pvq_encode_helper(daala_enc_ctx *daala_enc, tran_low_t *const coeff,
   int has_dc_skip = 1;
   int i;
   int off = od_qm_offset(tx_size, plane ? 1 : 0);
+  double save_pvq_lambda;
 
   DECLARE_ALIGNED(16, tran_low_t, coeff_pvq[OD_TXSIZE_MAX * OD_TXSIZE_MAX]);
   DECLARE_ALIGNED(16, tran_low_t, ref_coeff_pvq[OD_TXSIZE_MAX * OD_TXSIZE_MAX]);
@@ -1271,6 +1272,10 @@ void av1_pvq_encode_helper(daala_enc_ctx *daala_enc, tran_low_t *const coeff,
     ref_int32[i] =
         AOM_SIGNED_SHL(ref_coeff_pvq[i], OD_COEFF_SHIFT - coeff_shift);
     in_int32[i] = AOM_SIGNED_SHL(coeff_pvq[i], OD_COEFF_SHIFT - coeff_shift);
+  }
+  if (plane != 0) {
+    save_pvq_lambda = daala_enc->pvq_norm_lambda;
+    daala_enc->pvq_norm_lambda *= 1.1;
   }
 
   if (abs(in_int32[0] - ref_int32[0]) < pvq_dc_quant * 141 / 256) { /* 0.55 */
@@ -1326,6 +1331,7 @@ void av1_pvq_encode_helper(daala_enc_ctx *daala_enc, tran_low_t *const coeff,
 #error "CONFIG_PVQ currently requires CONFIG_DAALA_EC."
 #endif
   assert(*rate >= 0);
+  if (plane != 0) daala_enc->pvq_norm_lambda = save_pvq_lambda;
 }
 
 void av1_store_pvq_enc_info(PVQ_INFO *pvq_info, int *qg, int *theta,
