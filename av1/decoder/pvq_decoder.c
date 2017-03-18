@@ -182,7 +182,7 @@ static void pvq_decode_partition(aom_reader *r,
   /* The CfL flip bit is only decoded on the first band that has noref=0. */
   if (cfl->allow_flip && !*noref) {
     //if (aom_read_bit(r, "cfl:flip")) {
-    if (aom_read(r, 155, "cfl:flip")) {
+    if (aom_read(r, 102, "cfl:flip")) {
       //printf("1, %d\n", old_flip != 1);
       old_flip = 1;
       // This code actually flips the whole prediction. This works because the

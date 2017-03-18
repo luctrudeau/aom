@@ -680,7 +680,7 @@ void pvq_encode_partition(aom_writer *w,
        An early attempt using a "toogle" flag with simple adaptation wasn't
        worth the trouble. */
     //aom_write_bit(w, flip);
-    aom_write(w, flip, 155);
+    aom_write(w, flip, 102);
   }
   if (qg > 0) {
     int tmp;
