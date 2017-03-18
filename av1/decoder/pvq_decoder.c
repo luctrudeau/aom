@@ -81,6 +81,7 @@ static void pvq_synthesis(od_coeff *xcoeff, od_coeff *ypulse, od_val16 *r16,
    qm_inv);
 }
 
+static int old_flip = 0;
 /** Decodes a single vector of integers (eg, a partition within a
  *  coefficient block) encoded using PVQ
  *
@@ -181,13 +182,15 @@ static void pvq_decode_partition(aom_reader *r,
   /* The CfL flip bit is only decoded on the first band that has noref=0. */
   if (cfl->allow_flip && !*noref) {
     if (aom_read_bit(r, "cfl:flip")) {
-      printf("1\n");
+      printf("1, %d\n", old_flip != 1);
+      old_flip = 1;
       // This code actually flips the whole prediction. This works because the
       // bands before the flip bit are norefs (i.e. they don't use the
       // prediction). To avoid flipping the DC, i starts at 1.
       for (i = 1; i < cfl->nb_coeffs; i++) cfl->ref[i] = -cfl->ref[i];
     } else {
-      printf("0\n");
+      printf("0, %d\n", old_flip != 0);
+      old_flip = 0;
     }
     cfl->allow_flip = 0;
   }
