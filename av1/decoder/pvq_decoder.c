@@ -181,15 +181,16 @@ static void pvq_decode_partition(aom_reader *r,
 #if CONFIG_PVQ_CFL
   /* The CfL flip bit is only decoded on the first band that has noref=0. */
   if (cfl->allow_flip && !*noref) {
-    if (aom_read_bit(r, "cfl:flip")) {
-      printf("1, %d\n", old_flip != 1);
+    //if (aom_read_bit(r, "cfl:flip")) {
+    if (aom_read(r, 155, "cfl:flip")) {
+      //printf("1, %d\n", old_flip != 1);
       old_flip = 1;
       // This code actually flips the whole prediction. This works because the
       // bands before the flip bit are norefs (i.e. they don't use the
       // prediction). To avoid flipping the DC, i starts at 1.
       for (i = 1; i < cfl->nb_coeffs; i++) cfl->ref[i] = -cfl->ref[i];
     } else {
-      printf("0, %d\n", old_flip != 0);
+      //printf("0, %d\n", old_flip != 0);
       old_flip = 0;
     }
     cfl->allow_flip = 0;
