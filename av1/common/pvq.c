@@ -1130,13 +1130,14 @@ void cfl_store(CFL_CTX *const cfl, uint8_t *const input, int input_stride,
   }
 
   // To debug pipe stdout to a file and diff the encoder file and decoder file
-/*  printf("[%d %d (%d %d)] Store: ", row, col, cfl->y_width, cfl->y_height);
+/*
+  printf("[%d %d (%d %d)] Store: ", row, col, cfl->y_width, cfl->y_height);
+
   for (j = 0; j < tx_blk_size; j++) {
     for (i = 0; i < tx_blk_size; i++) {
       printf("%d ", pred[MAX_SB_SIZE * j + i]);
     }
   }
-  printf("\n");
   */
 }
 #endif

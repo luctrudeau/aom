@@ -2132,12 +2132,76 @@ static void build_intra_predictors(const MACROBLOCKD *xd, const uint8_t *ref,
   }
 #endif  // CONFIG_EXT_INTRA
 
-  // predict
-  if (mode == DC_PRED) {
-    dc_pred[n_left_px > 0][n_top_px > 0][tx_size](dst, dst_stride,
-                                                  const_above_row, left_col);
+  if (plane != 0) {
+    int sumChroma = 0;
+    int sumLuma = 0;
+    int sumChromaLuma = 0;
+    int sumLumaLuma = 0;
+    int luma_above, luma_left;
+    int chroma_above, chroma_left;
+
+    for (i = 0; i < bs; i++) {
+      chroma_above = above_row[i];
+      chroma_left = left_col[i];
+      luma_above = dst[i];
+      luma_left = dst[i * dst_stride];
+      sumChroma += chroma_above + chroma_left;
+      sumLuma += luma_above + luma_left;
+      sumChromaLuma += chroma_above * luma_above + chroma_left * luma_left;
+      sumLumaLuma += luma_above * luma_above + luma_left * luma_left;
+    }
+
+    /*   printf("\n\nAbove: ");
+       for (i = 0; i < bs; i++) {
+         printf("%d, ", above_row[i]);
+       }
+       printf("\nLeft: ");
+       for (i = 0; i < bs; i++) {
+         printf("%d, ", left_col[i]);
+       }
+       printf("\nInner Above: ");
+       for (i = 0; i < bs; i++) {
+         printf("%d, ", dst[i]);
+
+           printf("\nInner Left: ");
+           for (i = 0; i < bs; i++) {
+             printf("%d, ", dst[i * dst_stride]);
+           }
+           printf("\n");
+           */
+    const int N = 2 * bs;
+    /*printf("%d/%d\n", (N * sumChromaLuma - sumLuma * sumChroma),
+           (N * sumLumaLuma - sumChroma * sumChroma));
+    printf("N = %d, sumLumaLuma = %d sumChroma = %d\n", N, sumLumaLuma,
+           sumChroma);*/
+    double alpha;
+    if (N * sumLumaLuma == sumChroma * sumChroma) {
+      alpha = 0;
+    } else {
+      alpha = (N * sumChromaLuma - sumLuma * sumChroma) /
+              (double)(N * sumLumaLuma - sumChroma * sumChroma);
+    }
+    const double beta = (sumChroma - (int)(alpha * sumLuma)) / (double)N;
+
+    //    printf("Alpha: %d Beta: %d\n", alpha, beta);
+    int j;
+    for (j = 0; j < bs; j++) {
+      for (i = 0; i < bs; i++) {
+        dst[dst_stride * j + i] =
+            (uint8_t)(alpha * dst[dst_stride * j + i] + beta);
+        //        printf("%d, ", dst[dst_stride * j + i]);
+      }
+      //      printf("\n");
+    }
+    //    printf("\n");
   } else {
-    pred[mode][tx_size](dst, dst_stride, const_above_row, left_col);
+    // predict
+    if (mode == DC_PRED) {
+      dc_pred[n_left_px > 0][n_top_px > 0][tx_size](dst, dst_stride,
+                                                    const_above_row, left_col);
+    } else {
+      pred[mode][tx_size](dst, dst_stride, const_above_row, left_col);
+    }
   }
 }
 
@@ -2241,6 +2305,12 @@ static void predict_square_intra_block(const MACROBLOCKD *xd, int wpx, int hpx,
     return;
   }
 #endif
+  CFL_CTX *const cfl = xd->cfl;
+  int tx_blk_size = tx_size_wide[tx_size];
+  if (plane != 0) {
+    assert(mode == DC_PRED);
+    cfl_load(cfl, dst, dst_stride, row_off, col_off, tx_blk_size);
+  }
   build_intra_predictors(xd, ref, ref_stride, dst, dst_stride, mode, tx_size,
                          have_top ? AOMMIN(txwpx, xr + txwpx) : 0,
                          have_top && have_right ? AOMMIN(txwpx, xr) : 0,

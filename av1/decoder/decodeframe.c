@@ -449,7 +449,8 @@ static int av1_pvq_decode_helper2(AV1_COMMON *cm, MACROBLOCKD *const xd,
   struct macroblockd_plane *const pd = &xd->plane[plane];
 #if CONFIG_PVQ_CFL
   CFL_CTX *const cfl = xd->cfl;
-  cfl->enabled = plane != 0 && cm->frame_type == KEY_FRAME;
+  cfl->enabled = 0;
+  // cfl->enabled = plane != 0 && cm->frame_type == KEY_FRAME;
   if (plane != 0) assert(mbmi->uv_mode == DC_PRED);
 #endif
   // transform block size in pixels
@@ -467,12 +468,6 @@ static int av1_pvq_decode_helper2(AV1_COMMON *cm, MACROBLOCKD *const xd,
   dst = &pd->dst.buf[4 * row * pd->dst.stride + 4 * col];
 
   if (ac_dc_coded) {
-#if CONFIG_PVQ_CFL
-    if (cfl->enabled) {
-      cfl->flat_val = dst[0];
-      cfl_load(cfl, dst, pd->dst.stride, row, col, tx_blk_size);
-    }
-#endif
     int xdec = pd->subsampling_x;
     int seg_id = mbmi->segment_id;
     int16_t *quant;
@@ -490,16 +485,6 @@ static int av1_pvq_decode_helper2(AV1_COMMON *cm, MACROBLOCKD *const xd,
     fwd_txfm_param.lossless = xd->lossless[seg_id];
 
     fwd_txfm(pred, pvq_ref_coeff, diff_stride, &fwd_txfm_param);
-
-#if CONFIG_PVQ_CFL
-    if (cfl->enabled) {
-      assert(tx_type == DCT_DCT);
-      // Knowning that the prediction is DC_PRED and that DCT_DCT is used,
-      // we can compute the DC without doing a full DCT.
-      pvq_ref_coeff[0] =
-          cfl->flat_val * ((get_tx_scale(tx_size)) ? 128 : tx_blk_size * 8);
-    }
-#endif
 
     quant = &pd->seg_dequant[seg_id][0];  // aom's quantizer
 
@@ -520,10 +505,6 @@ static int av1_pvq_decode_helper2(AV1_COMMON *cm, MACROBLOCKD *const xd,
                             max_scan_line, eob);
   }
 
-#if CONFIG_PVQ_CFL
-  if (plane == 0 && cm->frame_type == KEY_FRAME)
-    cfl_store(cfl, dst, pd->dst.stride, row, col, tx_blk_size);
-#endif
   return eob;
 }
 #endif
@@ -548,7 +529,8 @@ static void predict_and_reconstruct_intra_block(
   av1_predict_intra_block(xd, pd->width, pd->height, txsize_to_bsize[tx_size],
                           mode, dst, pd->dst.stride, dst, pd->dst.stride, col,
                           row, plane);
-
+  int tx_blk_size = tx_size_wide[tx_size];
+  CFL_CTX *const cfl = xd->cfl;
   if (!mbmi->skip) {
     TX_TYPE tx_type = get_tx_type(plane_type, xd, block_idx, tx_size);
 #if !CONFIG_PVQ
@@ -569,6 +551,10 @@ static void predict_and_reconstruct_intra_block(
     av1_pvq_decode_helper2(cm, xd, mbmi, plane, row, col, tx_size, tx_type);
 #endif
   }
+#if CONFIG_PVQ_CFL
+  if (plane == 0 && cm->frame_type == KEY_FRAME)
+    cfl_store(cfl, dst, pd->dst.stride, row, col, tx_blk_size);
+#endif
 }
 
 #if CONFIG_VAR_TX && !CONFIG_COEF_INTERLEAVE
