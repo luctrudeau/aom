@@ -542,7 +542,8 @@ void av1_xform_quant(const AV1_COMMON *cm, MACROBLOCK *x, int plane, int block,
   assert(mbmi->uv_mode == DC_PRED);
   const int is_keyframe = cm->frame_type == KEY_FRAME;
   /*If we are coding a chroma block of a keyframe, we are doing CfL.*/
-  const int cfl_enabled = plane != 0 && is_keyframe;
+  // const int cfl_enabled = plane != 0 && is_keyframe;
+  const int cfl_enabled = 0;
 #endif
 
 #if !CONFIG_PVQ
@@ -589,13 +590,6 @@ void av1_xform_quant(const AV1_COMMON *cm, MACROBLOCK *x, int plane, int block,
 
   // transform block size in pixels
   tx_blk_size = tx_size_wide[tx_size];
-
-#if CONFIG_PVQ_CFL
-  if (cfl_enabled) {
-    xd->cfl->flat_val = dst[0];
-    cfl_load(xd->cfl, dst, dst_stride, blk_row, blk_col, tx_blk_size);
-  }
-#endif
 
   // copy uint8 orig and predicted block to int16 buffer
   // in order to use existing VP10 transform functions
@@ -650,14 +644,6 @@ void av1_xform_quant(const AV1_COMMON *cm, MACROBLOCK *x, int plane, int block,
         (x->pvq_coded) ? &x->pvq[block][plane] : &NULL_PVQ_INFO;
 
 #if CONFIG_PVQ_CFL
-    if (cfl_enabled) {
-      assert(tx_type == DCT_DCT);
-      // Use DC from DC_PRED instead of CfL. Knowning that the prediction is
-      // DC_PRED and that DCT_DCT is used, we can compute the DC without doing
-      // a full DCT.
-      ref_coeff[0] =
-          xd->cfl->flat_val * ((get_tx_scale(tx_size)) ? 128 : tx_blk_size * 8);
-    }
     pvq_info->cfl_enabled = cfl_enabled;
 #endif
     pvq_info->is_coded = x->pvq_coded;
@@ -675,18 +661,6 @@ void av1_xform_quant(const AV1_COMMON *cm, MACROBLOCK *x, int plane, int block,
                           x->pvq_speed,
                           pvq_info);  // PVQ info for a block
     skip = pvq_info->ac_dc_coded == PVQ_SKIP;
-#if CONFIG_PVQ_CFL
-    if (skip && cfl_enabled) {
-      // For CfL skip implies zeroing out the coefficients.
-      // In order to get away with not doing the inverse transform,
-      // we copy the flat value resulting from DC_PRED.
-      for (j = 0; j < tx_blk_size; j++) {
-        for (i = 0; i < tx_blk_size; i++) {
-          dst[j * dst_stride + i] = xd->cfl->flat_val;
-        }
-      }
-    }
-#endif
   }
   x->pvq_skip[plane] = skip;
 
@@ -1060,6 +1034,17 @@ void av1_encode_block_intra(int plane, int block, int blk_row, int blk_col,
                           mode, dst, dst_stride, dst, dst_stride, blk_col,
                           blk_row, plane);
 
+  /* if (plane != 0) {
+     for (j = 0; j < tx_blk_size; j++) {
+       for (i = 0; i < tx_blk_size; i++) {
+         printf("%d, ", src[src_stride * j + i]);
+       }
+       printf("\n");
+     }
+     printf("\n");
+     assert(0);
+   }
+   */
   if (check_subtract_block_size(tx1d_width, tx1d_height)) {
 #if CONFIG_AOM_HIGHBITDEPTH
     if (xd->cur_buf->flags & YV12_FLAG_HIGHBITDEPTH) {
@@ -1179,10 +1164,8 @@ void av1_encode_block_intra(int plane, int block, int blk_row, int blk_col,
 // Note : *(args->skip) == mbmi->skip
 #endif
 #if CONFIG_PVQ_CFL
-  {
-    if ((x->pvq_coded || x->cfl_store_y) && plane == 0) {
-      cfl_store(xd->cfl, dst, dst_stride, blk_row, blk_col, tx_blk_size);
-    }
+  if ((x->pvq_coded || x->cfl_store_y) && plane == 0) {
+    cfl_store(xd->cfl, dst, dst_stride, blk_row, blk_col, tx_blk_size);
   }
 #endif
 }
