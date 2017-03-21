@@ -538,7 +538,7 @@ void av1_xform_quant(const AV1_COMMON *cm, MACROBLOCK *x, int plane, int block,
   int tx_blk_size;
   int i, j;
 #endif
-#if CONFIG_PVQ_CFL
+#if CONFIG_CFL && CONFIG_PVQ
   assert(mbmi->uv_mode == DC_PRED);
   const int is_keyframe = cm->frame_type == KEY_FRAME;
   /*If we are coding a chroma block of a keyframe, we are doing CfL.*/
@@ -643,7 +643,7 @@ void av1_xform_quant(const AV1_COMMON *cm, MACROBLOCK *x, int plane, int block,
     PVQ_INFO *const pvq_info =
         (x->pvq_coded) ? &x->pvq[block][plane] : &NULL_PVQ_INFO;
 
-#if CONFIG_PVQ_CFL
+#if CONFIG_CFL
     pvq_info->cfl_enabled = cfl_enabled;
 #endif
     pvq_info->is_coded = x->pvq_coded;
@@ -665,9 +665,9 @@ void av1_xform_quant(const AV1_COMMON *cm, MACROBLOCK *x, int plane, int block,
   x->pvq_skip[plane] = skip;
 
   if (!skip) mbmi->skip = 0;
-#if CONFIG_PVQ_CFL
+#if CONFIG_CFL
   // Store Luma pixel when pvq skips.
-  if (skip && (x->pvq_coded || x->cfl_store_y) && plane == 0 && is_keyframe)
+  if (skip && (x->cfl_store_y) && plane == 0 && is_keyframe)
     cfl_store(xd->cfl, dst, dst_stride, blk_row, blk_col, tx_blk_size);
 #endif
 #endif  // #if !CONFIG_PVQ
@@ -1024,6 +1024,9 @@ void av1_encode_block_intra(int plane, int block, int blk_row, int blk_col,
   const int tx_blk_size = tx_size_wide[tx_size];
   int i, j;
 #endif
+#if CONFIG_CFL
+  const int tx_blk_size = tx_size_wide[tx_size];
+#endif
 
   dst = &pd->dst.buf[(blk_row * dst_stride + blk_col) << tx_size_wide_log2[0]];
   src = &p->src.buf[(blk_row * src_stride + blk_col) << tx_size_wide_log2[0]];
@@ -1163,8 +1166,8 @@ void av1_encode_block_intra(int plane, int block, int blk_row, int blk_col,
 #else
 // Note : *(args->skip) == mbmi->skip
 #endif
-#if CONFIG_PVQ_CFL
-  if ((x->pvq_coded || x->cfl_store_y) && plane == 0) {
+#if CONFIG_CFL
+  if (x->cfl_store_y && plane == 0) {
     cfl_store(xd->cfl, dst, dst_stride, blk_row, blk_col, tx_blk_size);
   }
 #endif

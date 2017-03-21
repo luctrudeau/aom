@@ -525,7 +525,7 @@ static INLINE void av1_init_macroblockd(AV1_COMMON *cm, MACROBLOCKD *xd,
 #if CONFIG_PVQ
                                         tran_low_t *pvq_ref_coeff,
 #endif
-#if CONFIG_PVQ_CFL
+#if CONFIG_CFL
                                         CFL_CTX *cfl,
 #endif
                                         tran_low_t *dqcoeff) {
@@ -535,7 +535,7 @@ static INLINE void av1_init_macroblockd(AV1_COMMON *cm, MACROBLOCKD *xd,
 #if CONFIG_PVQ
     xd->plane[i].pvq_ref_coeff = pvq_ref_coeff;
 #endif
-#if CONFIG_PVQ_CFL
+#if CONFIG_CFL
     xd->cfl = cfl;
     if (cfl != NULL) memset(&cfl->y_pix, 0, sizeof(uint8_t) * MAX_SB_SQUARE);
 #endif

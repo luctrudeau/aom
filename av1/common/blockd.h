@@ -118,6 +118,23 @@ typedef struct PVQ_QUEUE {
 } PVQ_QUEUE;
 #endif
 
+#if CONFIG_CFL
+typedef struct {
+  // Pixel buffer containing the Luma pixel used as the prediction for Chroma.
+  uint8_t y_pix[MAX_SB_SQUARE];
+  // Height and width of the pixel buffer.
+  int y_height, y_width;
+  // Pixel value of a DC_PRED block.
+  int flat_val;
+  // Whether the spatial intra pred must be replaced by CfL
+  int enabled;
+  // Whether the flip bit can be coded
+  // int allow_flip;
+  // int nb_coeffs;
+  // od_coeff *ref;
+} CFL_CTX;
+#endif
+
 typedef struct {
   uint8_t *plane[MAX_MB_PLANE];
   int stride[MAX_MB_PLANE];
@@ -547,9 +564,8 @@ typedef struct macroblockd {
 #if CONFIG_PVQ
   daala_dec_ctx daala_dec;
 #endif
-#if CONFIG_PVQ_CFL
+#if CONFIG_CFL
   CFL_CTX *cfl;
-
 #endif
 #if CONFIG_EC_ADAPT
   FRAME_CONTEXT *tile_ctx;

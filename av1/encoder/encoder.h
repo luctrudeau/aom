@@ -293,7 +293,7 @@ typedef struct TileDataEnc {
 #if CONFIG_PVQ
   PVQ_QUEUE pvq_q;
 #endif
-#if CONFIG_PVQ_CFL
+#if CONFIG_CFL
   CFL_CTX cfl;
 #endif
 #if CONFIG_EC_ADAPT

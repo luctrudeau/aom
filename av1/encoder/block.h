@@ -213,7 +213,7 @@ struct macroblock {
   int pvq_speed;
   int pvq_coded;  // Indicates whether pvq_info needs be stored to tokenize
 #endif
-#if CONFIG_PVQ_CFL
+#if CONFIG_CFL
   int cfl_store_y;
 #endif
 #if CONFIG_DAALA_DIST

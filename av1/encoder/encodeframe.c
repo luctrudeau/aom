@@ -1827,7 +1827,7 @@ static void rd_pick_sb_modes(const AV1_COMP *const cpi, TileDataEnc *tile_data,
   x->pvq_speed = 1;
   x->pvq_coded = 0;
 #endif
-#if CONFIG_PVQ_CFL
+#if CONFIG_CFL
   x->cfl_store_y = 0;
 #endif
 
@@ -4518,7 +4518,7 @@ static void rd_pick_partition(const AV1_COMP *const cpi, ThreadData *td,
   *rate_nocoef = best_rate_nocoef;
 #endif  // CONFIG_SUPERTX
 
-#if CONFIG_PVQ_CFL
+#if CONFIG_CFL
   x->cfl_store_y = 1;
 #endif
 
@@ -4536,7 +4536,7 @@ static void rd_pick_partition(const AV1_COMP *const cpi, ThreadData *td,
     }
   }
 
-#if CONFIG_PVQ_CFL
+#if CONFIG_CFL
   x->cfl_store_y = 0;
 #endif
 
@@ -4958,7 +4958,7 @@ void av1_encode_tile(AV1_COMP *cpi, ThreadData *td, int tile_row,
   td->mb.e_mbd.tile_ctx = &this_tile->tctx;
 #endif  // #if CONFIG_EC_ADAPT
 
-#if CONFIG_PVQ_CFL
+#if CONFIG_CFL
   td->mb.e_mbd.cfl = &this_tile->cfl;
   memset(&this_tile->cfl.y_pix, 0, sizeof(uint8_t) * MAX_SB_SQUARE);
 #endif
@@ -5644,7 +5644,7 @@ static void encode_superblock(const AV1_COMP *const cpi, ThreadData *td,
   x->pvq_speed = 0;
   x->pvq_coded = (dry_run == OUTPUT_ENABLED) ? 1 : 0;
 #endif
-#if CONFIG_PVQ_CFL
+#if CONFIG_CFL
   x->cfl_store_y = 1;
 #endif
   if (!is_inter) {
@@ -5654,7 +5654,7 @@ static void encode_superblock(const AV1_COMP *const cpi, ThreadData *td,
       av1_encode_intra_block_plane((AV1_COMMON *)cm, x, block_size, plane, 1,
                                    mi_row, mi_col);
 
-#if CONFIG_PVQ_CFL
+#if CONFIG_CFL
     x->cfl_store_y = 0;
 #endif
 

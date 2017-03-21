@@ -186,22 +186,6 @@ int od_vector_is_null(const od_coeff *x, int len);
 int od_qm_offset(int bs, int xydec);
 
 #if CONFIG_PVQ_CFL
-typedef struct {
-  // Pixel buffer containing the Luma pixel used as the prediction for Chroma.
-  uint8_t y_pix[MAX_SB_SQUARE];
-  // Height and width of the pixel buffer.
-  int y_height, y_width;
-  // Pixel value of a DC_PRED block.
-  int flat_val;
-  // Whether the spatial intra pred must be replaced by CfL
-  int enabled;
-  // Whether the flip bit can be coded
-  int allow_flip;
-  int nb_coeffs;
-  od_coeff *ref;
-} CFL_CTX;
-
-
 void cfl_load(const CFL_CTX *const cfl, uint8_t *const output,
     int output_stride, int row, int col, int tx_blk_size);
 

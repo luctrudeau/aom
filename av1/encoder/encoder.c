@@ -929,7 +929,7 @@ static void update_frame_size(AV1_COMP *cpi) {
 #if CONFIG_PVQ
                        NULL,
 #endif
-#if CONFIG_PVQ_CFL
+#if CONFIG_CFL
                        NULL,
 #endif
                        NULL);

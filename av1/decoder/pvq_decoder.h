@@ -29,7 +29,7 @@ int aom_laplace_decode_special_(aom_reader *r, unsigned decay,
 
 void od_pvq_decode(daala_dec_ctx *dec, od_coeff *ref, od_coeff *out, int q0,
     int pli, int bs, const od_val16 *beta, int nodesync,
-#if CONFIG_PVQ_CFL
+#if CONFIG_CFL
     CFL_CTX *cfl,
 #endif
     unsigned int *flags, PVQ_SKIP_TYPE ac_dc_coded, const int16_t *qm,

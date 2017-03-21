@@ -120,7 +120,7 @@ static void pvq_decode_partition(aom_reader *r,
                                  int nodesync,
                                  int is_skip_copy,
                                  int cdf_ctx,
-#if CONFIG_PVQ_CFL
+#if CONFIG_CFL
                                  CFL_CTX *cfl,
 #endif
                                  int has_skip,
@@ -177,7 +177,7 @@ static void pvq_decode_partition(aom_reader *r,
     itheta = (id >> 1) - 1;
     *noref = (itheta == -1);
   }
-#if CONFIG_PVQ_CFL
+#if CONFIG_CFL
   /* The CfL flip bit is only decoded on the first band that has noref=0. */
   if (cfl->allow_flip && !*noref) {
     if (aom_read_bit(r, "cfl:flip")) {
@@ -296,7 +296,7 @@ void od_pvq_decode(daala_dec_ctx *dec,
                    int bs,
                    const od_val16 *beta,
                    int nodesync,
-#if CONFIG_PVQ_CFL
+#if CONFIG_CFL
                    CFL_CTX *cfl,
 #endif
                    unsigned int *flags,
@@ -340,7 +340,7 @@ void od_pvq_decode(daala_dec_ctx *dec,
   nb_bands = OD_BAND_OFFSETS[bs][0];
   off = &OD_BAND_OFFSETS[bs][1];
   out[0] = ac_dc_coded & DC_CODED;
-#if CONFIG_PVQ_CFL
+#if CONFIG_CFL
   is_skip_copy = !cfl->enabled;
 #else
   is_skip_copy = 1;
@@ -351,7 +351,7 @@ void od_pvq_decode(daala_dec_ctx *dec,
       for (i = 1; i < 1 << (2*bs + 4); i++) out[i] = 0;
   } else {
     for (i = 0; i < nb_bands; i++) size[i] = off[i+1] - off[i];
-#if CONFIG_PVQ_CFL
+#if CONFIG_CFL
     cfl->ref = ref;
     cfl->nb_coeffs = off[nb_bands];
     cfl->allow_flip = cfl->enabled;
@@ -368,7 +368,7 @@ void od_pvq_decode(daala_dec_ctx *dec,
        model, &dec->state.adapt, exg + i, ext + i, ref + off[i], out + off[i],
        &noref[i], beta[i], nodesync, is_skip_copy,
        (pli != 0)*OD_TXSIZES*PVQ_MAX_PARTITIONS + bs*PVQ_MAX_PARTITIONS + i,
-#if CONFIG_PVQ_CFL
+#if CONFIG_CFL
        cfl,
 #endif
        i == 0 && (i < nb_bands - 1), skip_rest, i, &skip[i],

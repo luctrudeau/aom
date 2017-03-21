@@ -347,7 +347,7 @@ static void inverse_transform_block(MACROBLOCKD *xd, int plane,
 #if CONFIG_PVQ
 static int av1_pvq_decode_helper(od_dec_ctx *dec, tran_low_t *ref_coeff,
                                  tran_low_t *dqcoeff, int16_t *quant, int pli,
-#if CONFIG_PVQ_CFL
+#if CONFIG_CFL
                                  CFL_CTX *cfl,
 #endif
                                  int bs, TX_TYPE tx_type, int xdec,
@@ -398,7 +398,7 @@ static int av1_pvq_decode_helper(od_dec_ctx *dec, tran_low_t *ref_coeff,
   od_pvq_decode(
       dec, ref_int32, out_int32, quant[1] << (OD_COEFF_SHIFT - 3), pli, bs,
       OD_PVQ_BETA[use_activity_masking][pli][bs], OD_ROBUST_STREAM,
-#if CONFIG_PVQ_CFL
+#if CONFIG_CFL
       cfl,
 #endif
       &flags, ac_dc_coded, dec->state.qm + off, dec->state.qm_inv + off);
@@ -447,7 +447,7 @@ static int av1_pvq_decode_helper2(AV1_COMMON *cm, MACROBLOCKD *const xd,
                                   MB_MODE_INFO *const mbmi, int plane, int row,
                                   int col, TX_SIZE tx_size, TX_TYPE tx_type) {
   struct macroblockd_plane *const pd = &xd->plane[plane];
-#if CONFIG_PVQ_CFL
+#if CONFIG_CFL
   CFL_CTX *const cfl = xd->cfl;
   cfl->enabled = 0;
   // cfl->enabled = plane != 0 && cm->frame_type == KEY_FRAME;
@@ -490,7 +490,7 @@ static int av1_pvq_decode_helper2(AV1_COMMON *cm, MACROBLOCKD *const xd,
 
     eob = av1_pvq_decode_helper(&xd->daala_dec, pvq_ref_coeff, dqcoeff, quant,
                                 plane,
-#if CONFIG_PVQ_CFL
+#if CONFIG_CFL
                                 cfl,
 #endif
                                 tx_size, tx_type, xdec, ac_dc_coded);
@@ -529,8 +529,10 @@ static void predict_and_reconstruct_intra_block(
   av1_predict_intra_block(xd, pd->width, pd->height, txsize_to_bsize[tx_size],
                           mode, dst, pd->dst.stride, dst, pd->dst.stride, col,
                           row, plane);
+#if CONFIG_CFL
   int tx_blk_size = tx_size_wide[tx_size];
   CFL_CTX *const cfl = xd->cfl;
+#endif
   if (!mbmi->skip) {
     TX_TYPE tx_type = get_tx_type(plane_type, xd, block_idx, tx_size);
 #if !CONFIG_PVQ
@@ -551,7 +553,7 @@ static void predict_and_reconstruct_intra_block(
     av1_pvq_decode_helper2(cm, xd, mbmi, plane, row, col, tx_size, tx_type);
 #endif
   }
-#if CONFIG_PVQ_CFL
+#if CONFIG_CFL
   if (plane == 0 && cm->frame_type == KEY_FRAME)
     cfl_store(cfl, dst, pd->dst.stride, row, col, tx_blk_size);
 #endif
@@ -3552,7 +3554,7 @@ static const uint8_t *decode_tiles(AV1Decoder *pbi, const uint8_t *data,
 #if CONFIG_PVQ
                            td->pvq_ref_coeff,
 #endif
-#if CONFIG_PVQ_CFL
+#if CONFIG_CFL
                            &td->cfl,
 #endif
                            td->dqcoeff);
@@ -3921,7 +3923,7 @@ static const uint8_t *decode_tiles_mt(AV1Decoder *pbi, const uint8_t *data,
 #if CONFIG_PVQ
                              twd->pvq_ref_coeff,
 #endif
-#if CONFIG_PVQ_CFL
+#if CONFIG_CFL
                              &twd->cfl,
 #endif
                              twd->dqcoeff);

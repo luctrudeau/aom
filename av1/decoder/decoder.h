@@ -50,7 +50,7 @@ typedef struct TileData {
   /* forward transformed predicted image, a reference for PVQ */
   DECLARE_ALIGNED(16, tran_low_t, pvq_ref_coeff[OD_TXSIZE_MAX * OD_TXSIZE_MAX]);
 #endif
-#if CONFIG_PVQ_CFL
+#if CONFIG_CFL
   CFL_CTX cfl;
 #endif
 #if CONFIG_EC_ADAPT
@@ -72,7 +72,7 @@ typedef struct TileWorkerData {
   /* forward transformed predicted image, a reference for PVQ */
   DECLARE_ALIGNED(16, tran_low_t, pvq_ref_coeff[OD_TXSIZE_MAX * OD_TXSIZE_MAX]);
 #endif
-#if CONFIG_PVQ_CFL
+#if CONFIG_CFL
   CFL_CTX cfl;
 #endif
 #if CONFIG_EC_ADAPT
