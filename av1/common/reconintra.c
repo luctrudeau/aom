@@ -2471,6 +2471,7 @@ int cfl_compute_alpha_ind(const CFL_CTX *const cfl, uint8_t *const src,
 
   const double alpha = (sLL) ? sLC / (double)sLL : 0;
   const double a_alpha = fabs(alpha);
+  printf("%f\n", alpha);
 
   // Quantize alpha
   int ind = 0;
