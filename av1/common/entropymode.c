@@ -3041,12 +3041,18 @@ static const aom_cdf_prob
 #endif  // CONFIG_EXT_INTRA && CONFIG_INTRA_INTERP
 
 #if CONFIG_CFL
-static const aom_cdf_prob default_cfl_alpha_cdf[CDF_SIZE(CFL_ALPHABET_SIZE)] = {
-  // decreasing likelihood, after 6 iterations of alpha RDO on subset 3
-  AOM_ICDF(23928), AOM_ICDF(26267), AOM_ICDF(27319), AOM_ICDF(28330),
-  AOM_ICDF(29341), AOM_ICDF(30160), AOM_ICDF(30581), AOM_ICDF(30983),
-  AOM_ICDF(31353), AOM_ICDF(31634), AOM_ICDF(31907), AOM_ICDF(32171),
-  AOM_ICDF(32407), AOM_ICDF(32558), AOM_ICDF(32669), AOM_ICDF(32768)
+static const aom_cdf_prob default_cfl_uvec_cdf[CDF_SIZE(CFL_ALPHABET_SIZE)] = {
+  AOM_ICDF(18517), AOM_ICDF(19956), AOM_ICDF(21107), AOM_ICDF(21314),
+  AOM_ICDF(21391), AOM_ICDF(26647), AOM_ICDF(28062), AOM_ICDF(28130),
+  AOM_ICDF(28200), AOM_ICDF(28438), AOM_ICDF(28940), AOM_ICDF(30879),
+  AOM_ICDF(31233), AOM_ICDF(32267), AOM_ICDF(32514), AOM_ICDF(32768)
+};
+
+static const aom_cdf_prob default_cfl_mag_cdf[CDF_SIZE(CFL_ALPHABET_SIZE)] = {
+  AOM_ICDF(633),   AOM_ICDF(2397),  AOM_ICDF(2763),  AOM_ICDF(3938),
+  AOM_ICDF(5648),  AOM_ICDF(7614),  AOM_ICDF(8446),  AOM_ICDF(15833),
+  AOM_ICDF(17028), AOM_ICDF(22952), AOM_ICDF(24018), AOM_ICDF(28161),
+  AOM_ICDF(28831), AOM_ICDF(31120), AOM_ICDF(32017), AOM_ICDF(32768)
 };
 #endif
 
@@ -4549,7 +4555,8 @@ static void init_mode_probs(FRAME_CONTEXT *fc) {
 #endif
 #endif  // CONFIG_DELTA_Q
 #if CONFIG_CFL
-  av1_copy(fc->cfl_alpha_cdf, default_cfl_alpha_cdf);
+  av1_copy(fc->cfl_uvec_cdf, default_cfl_uvec_cdf);
+  av1_copy(fc->cfl_mag_cdf, default_cfl_mag_cdf);
 #endif
 }
 
