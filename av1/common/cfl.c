@@ -192,13 +192,19 @@ double cfl_load(const CFL_CTX *cfl, uint8_t *output, int output_stride, int row,
           bot_left = top_left + MAX_SB_SIZE;
           // In 4:2:0, average pixels in 2x2 grid
           if (i > 0) {
-            int prev =
-                OD_SHR_ROUND(y_pix[top_left - 1] + y_pix[bot_left - 1], 1);
-            int next =
-                OD_SHR_ROUND(y_pix[top_left + 1] + y_pix[bot_left + 1], 1);
-            int nei = OD_SHR_ROUND(prev + next, 1);
-            int current = OD_SHR_ROUND(y_pix[top_left] + y_pix[bot_left], 1);
-            output[output_row_offset + i] = OD_SHR_ROUND(current + nei, 1);
+            int nei =
+                OD_SHR_ROUND(y_pix[top_left - 1] + y_pix[bot_left - 1] +
+                                 y_pix[top_left + 1] + y_pix[bot_left + 1],
+                             3);
+            int current = OD_SHR_ROUND(y_pix[top_left] + y_pix[bot_left], 2);
+            output[output_row_offset + i] = current + nei;
+            /*printf(
+                "%d %d\n", current + nei,
+                OD_SHR_ROUND(y_pix[top_left] + y_pix[top_left + 1]  // Top row
+                                 + y_pix[bot_left] +
+                                 y_pix[bot_left + 1]  // Bottom row
+                             ,
+                             2));*/
           } else {
             output[output_row_offset + i] = OD_SHR_ROUND(
                 y_pix[top_left] + y_pix[top_left + 1]        // Top row
