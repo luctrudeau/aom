@@ -41,10 +41,6 @@ typedef struct {
   int uvec_costs[CFL_ALPHABET_SIZE];
   int mag_costs[CFL_ALPHABET_SIZE];
 
-  // Count the number of TX blocks in a predicted block to know when you are at
-  // the last one, so you can check for skips.
-  // TODO(any) Is there a better way to do this?
-  int num_tx_blk[CFL_PRED_PLANES];
 } CFL_CTX;
 
 // Q15 magnitudes used in the codebook

@@ -529,6 +529,24 @@ static const aom_prob default_if_y_probs[BLOCK_SIZE_GROUPS][INTRA_MODES - 1] = {
   { 148, 157, 47, 62, 238, 64, 7, 3, 1, 3, 74, 87 },  // block_size >= 32x32
 };
 
+#if CONFIG_CFL
+// TODO(ltrudeau) UV Mode probabilities
+static const aom_prob default_uv_probs[INTRA_MODES][UV_INTRA_MODES] = {
+  { 19, 19, 19, 19, 19, 19, 19, 19, 19, 19, 19, 19, 27 },    // y = dc
+  { 19, 19, 19, 19, 19, 19, 19, 19, 19, 19, 19, 19, 27 },    // y = v
+  { 19, 19, 19, 19, 19, 19, 19, 19, 19, 19, 19, 19, 27 },    // y = h
+  { 19, 19, 19, 19, 19, 19, 19, 19, 19, 19, 19, 19, 27 }, ,  // y = d45
+  { 19, 19, 19, 19, 19, 19, 19, 19, 19, 19, 19, 19, 27 },    // y = d135
+  { 19, 19, 19, 19, 19, 19, 19, 19, 19, 19, 19, 19, 27 },    // y = d117
+  { 19, 19, 19, 19, 19, 19, 19, 19, 19, 19, 19, 19, 27 },    // y = d153
+  { 19, 19, 19, 19, 19, 19, 19, 19, 19, 19, 19, 19, 27 }, ,  // y = d207
+  { 19, 19, 19, 19, 19, 19, 19, 19, 19, 19, 19, 19, 27 },    // y = d63
+  { 19, 19, 19, 19, 19, 19, 19, 19, 19, 19, 19, 19, 27 },    // y = smooth
+  { 19, 19, 19, 19, 19, 19, 19, 19, 19, 19, 19, 19, 27 },    // y = smooth_v
+  { 19, 19, 19, 19, 19, 19, 19, 19, 19, 19, 19, 19, 27 },    // y = smooth_h
+  { 19, 19, 19, 19, 19, 19, 19, 19, 19, 19, 19, 19, 27 },    // y = tm
+};
+#else
 static const aom_prob default_uv_probs[INTRA_MODES][INTRA_MODES - 1] = {
   { 184, 3, 67, 135, 194, 108, 33, 43, 40, 86, 121, 118 },   // y = dc
   { 23, 3, 204, 105, 117, 53, 14, 68, 13, 19, 112, 86 },     // y = v
@@ -544,6 +562,7 @@ static const aom_prob default_uv_probs[INTRA_MODES][INTRA_MODES - 1] = {
   { 137, 4, 43, 78, 196, 202, 16, 21, 24, 48, 123, 91 },     // y = smooth_h
   { 137, 12, 92, 142, 217, 71, 14, 45, 29, 62, 108, 109 },   // y = tm
 };
+#endif CONFIG_CFL
 
 #else  // !CONFIG_SMOOTH_HV
 
@@ -711,6 +730,21 @@ static const aom_prob default_if_y_probs[BLOCK_SIZE_GROUPS][INTRA_MODES - 1] = {
   { 96, 27, 50, 107, 221, 148, 16, 22, 14, 39 },   // block_size >= 32x32
 };
 
+#if CONFIG_CFL
+static const aom_prob default_uv_probs[INTRA_MODES][UV_INTRA_MODES] = {
+  { 23, 23, 23, 23, 23, 23, 23, 23, 23, 23, 25 },  // y = dc
+  { 23, 23, 23, 23, 23, 23, 23, 23, 23, 23, 25 },  // y = v
+  { 23, 23, 23, 23, 23, 23, 23, 23, 23, 23, 25 },  // y = h
+  { 23, 23, 23, 23, 23, 23, 23, 23, 23, 23, 25 },  // y = d45
+  { 23, 23, 23, 23, 23, 23, 23, 23, 23, 23, 25 },  // y = d135
+  { 23, 23, 23, 23, 23, 23, 23, 23, 23, 23, 25 },  // y = d117
+  { 23, 23, 23, 23, 23, 23, 23, 23, 23, 23, 25 },  // y = d153
+  { 23, 23, 23, 23, 23, 23, 23, 23, 23, 23, 25 },  // y = d207
+  { 23, 23, 23, 23, 23, 23, 23, 23, 23, 23, 25 },  // y = d63
+  { 23, 23, 23, 23, 23, 23, 23, 23, 23, 23, 25 },  // y = smooth
+  { 23, 23, 23, 23, 23, 23, 23, 23, 23, 23, 25 },  // y = paeth
+};
+#else
 static const aom_prob default_uv_probs[INTRA_MODES][INTRA_MODES - 1] = {
   { 199, 3, 79, 179, 220, 109, 38, 50, 68, 138 },   // y = dc
   { 17, 2, 219, 136, 131, 58, 21, 106, 23, 41 },    // y = v
@@ -724,6 +758,7 @@ static const aom_prob default_uv_probs[INTRA_MODES][INTRA_MODES - 1] = {
   { 163, 3, 68, 87, 190, 255, 19, 27, 25, 46 },     // y = smooth
   { 185, 7, 113, 171, 203, 57, 18, 69, 49, 104 },   // y = paeth
 };
+#endif  // CONFIG_CFL
 
 #endif  // CONFIG_SMOOTH_HV
 
@@ -872,6 +907,24 @@ static const aom_prob default_if_y_probs[BLOCK_SIZE_GROUPS][INTRA_MODES - 1] = {
   { 221, 135, 38, 194, 248, 121, 96, 85, 29 }  // block_size >= 32x32
 };
 
+#if CONFIG_CFL
+// Default probabilities for signaling Intra mode for UV plane -- common for
+// both intra and inter frames.
+// Context used: Intra mode used by Y plane of the same block.
+// TODO(ltrudeau) UV Mode probabilities
+static const aom_prob default_uv_probs[INTRA_MODES][UV_INTRA_MODES] = {
+  { 25, 25, 25, 25, 25, 25, 25, 25, 25, 30 },  // y = dc
+  { 25, 25, 25, 25, 25, 25, 25, 25, 25, 30 },  // y = v
+  { 25, 25, 25, 25, 25, 25, 25, 25, 25, 30 },  // y = h
+  { 25, 25, 25, 25, 25, 25, 25, 25, 25, 30 },  // y = d45
+  { 25, 25, 25, 25, 25, 25, 25, 25, 25, 30 },  // y = d135
+  { 25, 25, 25, 25, 25, 25, 25, 25, 25, 30 },  // y = d117
+  { 25, 25, 25, 25, 25, 25, 25, 25, 25, 30 },  // y = d153
+  { 25, 25, 25, 25, 25, 25, 25, 25, 25, 30 },  // y = d207
+  { 25, 25, 25, 25, 25, 25, 25, 25, 25, 30 },  // y = d63
+  { 25, 25, 25, 25, 25, 25, 25, 25, 25, 30 },  // y = tm
+};
+#else
 // Default probabilities for signaling Intra mode for UV plane -- common for
 // both intra and inter frames.
 // Context used: Intra mode used by Y plane of the same block.
@@ -887,6 +940,7 @@ static const aom_prob default_uv_probs[INTRA_MODES][INTRA_MODES - 1] = {
   { 77, 7, 64, 116, 132, 122, 37, 126, 120 },   // y = d63
   { 101, 21, 107, 181, 192, 103, 19, 67, 125 }  // y = tm
 };
+#endif
 
 #endif  // CONFIG_ALT_INTRA
 
@@ -2319,6 +2373,63 @@ static const aom_cdf_prob
         AOM_ICDF(32768), 0 },
     };
 
+#if CONFIG_CFL
+static const aom_cdf_prob
+    default_uv_mode_cdf[INTRA_MODES][CDF_SIZE(UV_INTRA_MODES)] = {
+      { AOM_ICDF(11776), AOM_ICDF(11884), AOM_ICDF(14268), AOM_ICDF(16955),
+        AOM_ICDF(17317), AOM_ICDF(17814), AOM_ICDF(18224), AOM_ICDF(18689),
+        AOM_ICDF(19049), AOM_ICDF(19702), AOM_ICDF(20312), AOM_ICDF(20625),
+        AOM_ICDF(20992), AOM_ICDF(32768), 0 },
+      { AOM_ICDF(2313), AOM_ICDF(4626), AOM_ICDF(6939), AOM_ICDF(9252),
+        AOM_ICDF(11565), AOM_ICDF(13878), AOM_ICDF(16191), AOM_ICDF(18504),
+        AOM_ICDF(20817), AOM_ICDF(23130), AOM_ICDF(25443), AOM_ICDF(27756),
+        AOM_ICDF(30069), AOM_ICDF(32768), 0 },
+      { AOM_ICDF(2313), AOM_ICDF(4626), AOM_ICDF(6939), AOM_ICDF(9252),
+        AOM_ICDF(11565), AOM_ICDF(13878), AOM_ICDF(16191), AOM_ICDF(18504),
+        AOM_ICDF(20817), AOM_ICDF(23130), AOM_ICDF(25443), AOM_ICDF(27756),
+        AOM_ICDF(30069), AOM_ICDF(32768), 0 },
+      { AOM_ICDF(2313), AOM_ICDF(4626), AOM_ICDF(6939), AOM_ICDF(9252),
+        AOM_ICDF(11565), AOM_ICDF(13878), AOM_ICDF(16191), AOM_ICDF(18504),
+        AOM_ICDF(20817), AOM_ICDF(23130), AOM_ICDF(25443), AOM_ICDF(27756),
+        AOM_ICDF(30069), AOM_ICDF(32768), 0 },
+      { AOM_ICDF(2313), AOM_ICDF(4626), AOM_ICDF(6939), AOM_ICDF(9252),
+        AOM_ICDF(11565), AOM_ICDF(13878), AOM_ICDF(16191), AOM_ICDF(18504),
+        AOM_ICDF(20817), AOM_ICDF(23130), AOM_ICDF(25443), AOM_ICDF(27756),
+        AOM_ICDF(30069), AOM_ICDF(32768), 0 },
+      { AOM_ICDF(2313), AOM_ICDF(4626), AOM_ICDF(6939), AOM_ICDF(9252),
+        AOM_ICDF(11565), AOM_ICDF(13878), AOM_ICDF(16191), AOM_ICDF(18504),
+        AOM_ICDF(20817), AOM_ICDF(23130), AOM_ICDF(25443), AOM_ICDF(27756),
+        AOM_ICDF(30069), AOM_ICDF(32768), 0 },
+      { AOM_ICDF(2313), AOM_ICDF(4626), AOM_ICDF(6939), AOM_ICDF(9252),
+        AOM_ICDF(11565), AOM_ICDF(13878), AOM_ICDF(16191), AOM_ICDF(18504),
+        AOM_ICDF(20817), AOM_ICDF(23130), AOM_ICDF(25443), AOM_ICDF(27756),
+        AOM_ICDF(30069), AOM_ICDF(32768), 0 },
+      { AOM_ICDF(2313), AOM_ICDF(4626), AOM_ICDF(6939), AOM_ICDF(9252),
+        AOM_ICDF(11565), AOM_ICDF(13878), AOM_ICDF(16191), AOM_ICDF(18504),
+        AOM_ICDF(20817), AOM_ICDF(23130), AOM_ICDF(25443), AOM_ICDF(27756),
+        AOM_ICDF(30069), AOM_ICDF(32768), 0 },
+      { AOM_ICDF(2313), AOM_ICDF(4626), AOM_ICDF(6939), AOM_ICDF(9252),
+        AOM_ICDF(11565), AOM_ICDF(13878), AOM_ICDF(16191), AOM_ICDF(18504),
+        AOM_ICDF(20817), AOM_ICDF(23130), AOM_ICDF(25443), AOM_ICDF(27756),
+        AOM_ICDF(30069), AOM_ICDF(32768), 0 },
+      { AOM_ICDF(2313), AOM_ICDF(4626), AOM_ICDF(6939), AOM_ICDF(9252),
+        AOM_ICDF(11565), AOM_ICDF(13878), AOM_ICDF(16191), AOM_ICDF(18504),
+        AOM_ICDF(20817), AOM_ICDF(23130), AOM_ICDF(25443), AOM_ICDF(27756),
+        AOM_ICDF(30069), AOM_ICDF(32768), 0 },
+      { AOM_ICDF(2313), AOM_ICDF(4626), AOM_ICDF(6939), AOM_ICDF(9252),
+        AOM_ICDF(11565), AOM_ICDF(13878), AOM_ICDF(16191), AOM_ICDF(18504),
+        AOM_ICDF(20817), AOM_ICDF(23130), AOM_ICDF(25443), AOM_ICDF(27756),
+        AOM_ICDF(30069), AOM_ICDF(32768), 0 },
+      { AOM_ICDF(2313), AOM_ICDF(4626), AOM_ICDF(6939), AOM_ICDF(9252),
+        AOM_ICDF(11565), AOM_ICDF(13878), AOM_ICDF(16191), AOM_ICDF(18504),
+        AOM_ICDF(20817), AOM_ICDF(23130), AOM_ICDF(25443), AOM_ICDF(27756),
+        AOM_ICDF(30069), AOM_ICDF(32768), 0 },
+      { AOM_ICDF(2313), AOM_ICDF(4626), AOM_ICDF(6939), AOM_ICDF(9252),
+        AOM_ICDF(11565), AOM_ICDF(13878), AOM_ICDF(16191), AOM_ICDF(18504),
+        AOM_ICDF(20817), AOM_ICDF(23130), AOM_ICDF(25443), AOM_ICDF(27756),
+        AOM_ICDF(30069), AOM_ICDF(32768), 0 }
+    };
+#else
 static const aom_cdf_prob
     default_uv_mode_cdf[INTRA_MODES][CDF_SIZE(INTRA_MODES)] = {
       { AOM_ICDF(23552), AOM_ICDF(23660), AOM_ICDF(26044), AOM_ICDF(28731),
@@ -2374,6 +2485,7 @@ static const aom_cdf_prob
         AOM_ICDF(29907), AOM_ICDF(30600), AOM_ICDF(31515), AOM_ICDF(32049),
         AOM_ICDF(32768), 0 },
     };
+#endif  // CONFIG_CFL
 #else   // !CONFIG_SMOOTH_HV
 static const aom_cdf_prob
     default_if_y_mode_cdf[BLOCK_SIZE_GROUPS][CDF_SIZE(INTRA_MODES)] = {
@@ -2391,6 +2503,44 @@ static const aom_cdf_prob
         AOM_ICDF(25817), AOM_ICDF(26876), AOM_ICDF(32768), 0 },
     };
 
+#if CONFIG_CFL
+static const aom_cdf_prob
+    default_uv_mode_cdf[INTRA_MODES][CDF_SIZE(UV_INTRA_MODES)] = {
+      { AOM_ICDF(12736), AOM_ICDF(12822), AOM_ICDF(15047), AOM_ICDF(18043),
+        AOM_ICDF(18252), AOM_ICDF(18533), AOM_ICDF(18756), AOM_ICDF(19005),
+        AOM_ICDF(19278), AOM_ICDF(19684), AOM_ICDF(20032), AOM_ICDF(32768), 0 },
+      { AOM_ICDF(1088), AOM_ICDF(1327), AOM_ICDF(27293), AOM_ICDF(28486),
+        AOM_ICDF(28744), AOM_ICDF(29624), AOM_ICDF(29793), AOM_ICDF(30574),
+        AOM_ICDF(30673), AOM_ICDF(30834), AOM_ICDF(31680), AOM_ICDF(32768), 0 },
+      { AOM_ICDF(1664), AOM_ICDF(1779), AOM_ICDF(2352), AOM_ICDF(29435),
+        AOM_ICDF(29608), AOM_ICDF(29756), AOM_ICDF(29840), AOM_ICDF(29944),
+        AOM_ICDF(30252), AOM_ICDF(30934), AOM_ICDF(31104), AOM_ICDF(32768), 0 },
+      { AOM_ICDF(11712), AOM_ICDF(11822), AOM_ICDF(14203), AOM_ICDF(16119),
+        AOM_ICDF(16346), AOM_ICDF(16719), AOM_ICDF(18430), AOM_ICDF(19497),
+        AOM_ICDF(19747), AOM_ICDF(20657), AOM_ICDF(21056), AOM_ICDF(32768), 0 },
+      { AOM_ICDF(11392), AOM_ICDF(11470), AOM_ICDF(12863), AOM_ICDF(14895),
+        AOM_ICDF(17098), AOM_ICDF(18117), AOM_ICDF(18384), AOM_ICDF(18723),
+        AOM_ICDF(19811), AOM_ICDF(20282), AOM_ICDF(21376), AOM_ICDF(32768), 0 },
+      { AOM_ICDF(9856), AOM_ICDF(10009), AOM_ICDF(13285), AOM_ICDF(14572),
+        AOM_ICDF(15875), AOM_ICDF(21521), AOM_ICDF(21766), AOM_ICDF(22191),
+        AOM_ICDF(22602), AOM_ICDF(22911), AOM_ICDF(22912), AOM_ICDF(32768), 0 },
+      { AOM_ICDF(10688), AOM_ICDF(10733), AOM_ICDF(11442), AOM_ICDF(17000),
+        AOM_ICDF(17797), AOM_ICDF(18091), AOM_ICDF(18247), AOM_ICDF(18397),
+        AOM_ICDF(21274), AOM_ICDF(21762), AOM_ICDF(22080), AOM_ICDF(32768), 0 },
+      { AOM_ICDF(9856), AOM_ICDF(9958), AOM_ICDF(10869), AOM_ICDF(18654),
+        AOM_ICDF(18958), AOM_ICDF(19243), AOM_ICDF(19601), AOM_ICDF(19873),
+        AOM_ICDF(20277), AOM_ICDF(22552), AOM_ICDF(22912), AOM_ICDF(32768), 0 },
+      { AOM_ICDF(9792), AOM_ICDF(9998), AOM_ICDF(13851), AOM_ICDF(15709),
+        AOM_ICDF(16121), AOM_ICDF(16881), AOM_ICDF(17786), AOM_ICDF(21131),
+        AOM_ICDF(21463), AOM_ICDF(22078), AOM_ICDF(22976), AOM_ICDF(32768), 0 },
+      { AOM_ICDF(10432), AOM_ICDF(10572), AOM_ICDF(13697), AOM_ICDF(15876),
+        AOM_ICDF(16630), AOM_ICDF(16633), AOM_ICDF(17056), AOM_ICDF(17613),
+        AOM_ICDF(18074), AOM_ICDF(18840), AOM_ICDF(22336), AOM_ICDF(32768), 0 },
+      { AOM_ICDF(11840), AOM_ICDF(12089), AOM_ICDF(15991), AOM_ICDF(18606),
+        AOM_ICDF(18758), AOM_ICDF(19289), AOM_ICDF(19404), AOM_ICDF(19815),
+        AOM_ICDF(20028), AOM_ICDF(20394), AOM_ICDF(20928), AOM_ICDF(32768), 0 },
+    };
+#else
 static const aom_cdf_prob
     default_uv_mode_cdf[INTRA_MODES][CDF_SIZE(INTRA_MODES)] = {
       { AOM_ICDF(25472), AOM_ICDF(25558), AOM_ICDF(27783), AOM_ICDF(30779),
@@ -2427,6 +2577,7 @@ static const aom_cdf_prob
         AOM_ICDF(30598), AOM_ICDF(31129), AOM_ICDF(31244), AOM_ICDF(31655),
         AOM_ICDF(31868), AOM_ICDF(32234), AOM_ICDF(32768), 0 },
     };
+#endif  // CONFIG_CFL
 #endif  // CONFIG_SMOOTH_HV
 #else   // !CONFIG_ALT_INTRA
 static const aom_cdf_prob
@@ -2445,6 +2596,41 @@ static const aom_cdf_prob
         AOM_ICDF(32607), AOM_ICDF(32768), 0 },
     };
 
+#if CONFIG_CFL
+static const aom_cdf_prob
+    default_uv_mode_cdf[INTRA_MODES][CDF_SIZE(UV_INTRA_MODES)] = {
+      { AOM_ICDF(2944), AOM_ICDF(5888), AOM_ICDF(8832), AOM_ICDF(11776),
+        AOM_ICDF(14720), AOM_ICDF(17664), AOM_ICDF(20608), AOM_ICDF(23552),
+        AOM_ICDF(26496), AOM_ICDF(29440), AOM_ICDF(32768), 0 },
+      { AOM_ICDF(2944), AOM_ICDF(5888), AOM_ICDF(8832), AOM_ICDF(11776),
+        AOM_ICDF(14720), AOM_ICDF(17664), AOM_ICDF(20608), AOM_ICDF(23552),
+        AOM_ICDF(26496), AOM_ICDF(29440), AOM_ICDF(32768), 0 },
+      { AOM_ICDF(2944), AOM_ICDF(5888), AOM_ICDF(8832), AOM_ICDF(11776),
+        AOM_ICDF(14720), AOM_ICDF(17664), AOM_ICDF(20608), AOM_ICDF(23552),
+        AOM_ICDF(26496), AOM_ICDF(29440), AOM_ICDF(32768), 0 },
+      { AOM_ICDF(2944), AOM_ICDF(5888), AOM_ICDF(8832), AOM_ICDF(11776),
+        AOM_ICDF(14720), AOM_ICDF(17664), AOM_ICDF(20608), AOM_ICDF(23552),
+        AOM_ICDF(26496), AOM_ICDF(29440), AOM_ICDF(32768), 0 },
+      { AOM_ICDF(2944), AOM_ICDF(5888), AOM_ICDF(8832), AOM_ICDF(11776),
+        AOM_ICDF(14720), AOM_ICDF(17664), AOM_ICDF(20608), AOM_ICDF(23552),
+        AOM_ICDF(26496), AOM_ICDF(29440), AOM_ICDF(32768), 0 },
+      { AOM_ICDF(2944), AOM_ICDF(5888), AOM_ICDF(8832), AOM_ICDF(11776),
+        AOM_ICDF(14720), AOM_ICDF(17664), AOM_ICDF(20608), AOM_ICDF(23552),
+        AOM_ICDF(26496), AOM_ICDF(29440), AOM_ICDF(32768), 0 },
+      { AOM_ICDF(2944), AOM_ICDF(5888), AOM_ICDF(8832), AOM_ICDF(11776),
+        AOM_ICDF(14720), AOM_ICDF(17664), AOM_ICDF(20608), AOM_ICDF(23552),
+        AOM_ICDF(26496), AOM_ICDF(29440), AOM_ICDF(32768), 0 },
+      { AOM_ICDF(2944), AOM_ICDF(5888), AOM_ICDF(8832), AOM_ICDF(11776),
+        AOM_ICDF(14720), AOM_ICDF(17664), AOM_ICDF(20608), AOM_ICDF(23552),
+        AOM_ICDF(26496), AOM_ICDF(29440), AOM_ICDF(32768), 0 },
+      { AOM_ICDF(2944), AOM_ICDF(5888), AOM_ICDF(8832), AOM_ICDF(11776),
+        AOM_ICDF(14720), AOM_ICDF(17664), AOM_ICDF(20608), AOM_ICDF(23552),
+        AOM_ICDF(26496), AOM_ICDF(29440), AOM_ICDF(32768), 0 },
+      { AOM_ICDF(2944), AOM_ICDF(5888), AOM_ICDF(8832), AOM_ICDF(11776),
+        AOM_ICDF(14720), AOM_ICDF(17664), AOM_ICDF(20608), AOM_ICDF(23552),
+        AOM_ICDF(26496), AOM_ICDF(29440), AOM_ICDF(32768), 0 },
+    };
+#else
 static const aom_cdf_prob
     default_uv_mode_cdf[INTRA_MODES][CDF_SIZE(INTRA_MODES)] = {
       { AOM_ICDF(15360), AOM_ICDF(15836), AOM_ICDF(20863), AOM_ICDF(27513),
@@ -2478,6 +2664,7 @@ static const aom_cdf_prob
         AOM_ICDF(28543), AOM_ICDF(29663), AOM_ICDF(29893), AOM_ICDF(30645),
         AOM_ICDF(31682), AOM_ICDF(32768), 0 },
     };
+#endif  // CONFIG_CFL
 #endif  // CONFIG_ALT_INTRA
 
 #if CONFIG_EXT_PARTITION_TYPES
