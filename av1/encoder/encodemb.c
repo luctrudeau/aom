@@ -1549,23 +1549,11 @@ static int cfl_compute_alpha_ind(MACROBLOCK *const x, const CFL_CTX *const cfl,
   int dist_u, dist_v;
   int dist_u_neg, dist_v_neg;
   int dist;
-  int64_t cost;
-  int64_t best_cost;
-
-  // Compute least squares parameter of the entire block
-  // IMPORTANT: We assume that the first code is 0,0
   int ind = 0;
-  signs_out[CFL_PRED_U] = CFL_SIGN_POS;
-  signs_out[CFL_PRED_V] = CFL_SIGN_POS;
+  int64_t cost;
+  int64_t best_cost = INT64_MAX;
 
-  dist = cfl_alpha_dist(tmp_pix, MAX_SB_SIZE, y_avg, src_u, src_stride_u,
-                        block_width, block_height, dc_pred_u, 0, NULL) +
-         cfl_alpha_dist(tmp_pix, MAX_SB_SIZE, y_avg, src_v, src_stride_v,
-                        block_width, block_height, dc_pred_v, 0, NULL);
-  dist *= 16;
-  best_cost = RDCOST(x->rdmult, x->rddiv, cfl->costs[0], dist);
-
-  for (int c = 1; c < CFL_ALPHABET_SIZE; c++) {
+  for (int c = 0; c < CFL_ALPHABET_SIZE; c++) {
     dist_u = cfl_alpha_dist(tmp_pix, MAX_SB_SIZE, y_avg, src_u, src_stride_u,
                             block_width, block_height, dc_pred_u,
                             cfl_alpha_codes[c][CFL_PRED_U], &dist_u_neg);
@@ -1599,11 +1587,14 @@ static inline void cfl_update_costs(CFL_CTX *cfl, FRAME_CONTEXT *ec_ctx) {
   const int prob_den = CDF_PROB_TOP;
 
   int prob_num = AOM_ICDF(ec_ctx->cfl_alpha_cdf[0]);
-  cfl->costs[0] = av1_cost_zero(get_prob(prob_num, prob_den));
+  int sign_bit_cost = (cfl_alpha_codes[0][CFL_PRED_U] != 0.0) +
+                      (cfl_alpha_codes[0][CFL_PRED_V] != 0.0);
+  cfl->costs[0] = av1_cost_zero(get_prob(prob_num, prob_den)) +
+                  av1_cost_literal(sign_bit_cost);
 
   for (int c = 1; c < CFL_ALPHABET_SIZE; c++) {
-    int sign_bit_cost = (cfl_alpha_codes[c][CFL_PRED_U] != 0.0) +
-                        (cfl_alpha_codes[c][CFL_PRED_V] != 0.0);
+    sign_bit_cost = (cfl_alpha_codes[c][CFL_PRED_U] != 0.0) +
+                    (cfl_alpha_codes[c][CFL_PRED_V] != 0.0);
     prob_num = AOM_ICDF(ec_ctx->cfl_alpha_cdf[c]) -
                AOM_ICDF(ec_ctx->cfl_alpha_cdf[c - 1]);
     cfl->costs[c] = av1_cost_zero(get_prob(prob_num, prob_den)) +
