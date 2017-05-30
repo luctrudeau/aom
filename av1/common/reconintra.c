@@ -2518,10 +2518,18 @@ void av1_predict_intra_block_facade(MACROBLOCKD *xd, int plane, int block_idx,
         cfl_dc_pred(xd, get_plane_block_size(block_idx, pd), tx_size);
       }
 
-      cfl_predict_block(
-          xd->cfl, dst, pd->dst.stride, blk_row, blk_col, tx_size,
-          xd->cfl->dc_pred[plane - 1],
-          cfl_idx_to_alpha(mbmi->cfl_uvec_idx, mbmi->cfl_mag_idx, plane - 1));
+      const double alpha =
+          cfl_idx_to_alpha(mbmi->cfl_uvec_idx, mbmi->cfl_mag_idx, plane - 1);
+
+      if (alpha == 0.) {
+        av1_predict_intra_block(xd, pd->width, pd->height,
+                                txsize_to_bsize[tx_size], DC_PRED, dst, dst_stride,
+                                dst, dst_stride, blk_col, blk_row, plane);
+      } else {
+        cfl_predict_block(
+            xd->cfl, dst, pd->dst.stride, blk_row, blk_col, tx_size,
+            xd->cfl->dc_pred[plane - 1], alpha);
+      }
     } else {
       const PREDICTION_MODE mode = get_pred_mode(mbmi->uv_mode);
       av1_predict_intra_block(xd, pd->width, pd->height,
