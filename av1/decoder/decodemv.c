@@ -221,12 +221,10 @@ static int read_cfl_alphas(FRAME_CONTEXT *const ec_ctx, aom_reader *r,
                            int *mag_out) {
   const int ind =
       aom_read_symbol(r, ec_ctx->cfl_uvec_cdf, CFL_ALPHABET_SIZE, "cfl:uvec");
-  // Magnitudes are only signaled for nonzero vectors.
-  if (ind)
-    *mag_out =
-        aom_read_symbol(r, ec_ctx->cfl_mag_cdf, CFL_ALPHABET_SIZE, "cfl:mag");
+  *mag_out =
+      aom_read_symbol(r, ec_ctx->cfl_mag_cdf, CFL_ALPHABET_SIZE, "cfl:mag");
 
-  return ind;
+  return ind + 1;
 }
 #endif
 

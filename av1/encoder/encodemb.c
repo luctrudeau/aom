@@ -1879,15 +1879,16 @@ static int cfl_compute_alpha_ind(MACROBLOCK *const x, const CFL_CTX *const cfl,
   int64_t best_cost;
 
   // Compute least squares parameter of the entire block
-  // IMPORTANT: We assume that the first code is 0,0
+  // We assume that 0,0 is coded as UV_DC_PRED
   int ind = 0;
   int mag = 0;
 
   dist = sse[CFL_PRED_U][0] + sse[CFL_PRED_V][0];
   dist *= 16;
-  best_cost = RDCOST(x->rdmult, x->rddiv, cfl->uvec_costs[0], dist);
+  // TODO(barrbrain) use rate delta between UV_DC_PRED and UV_CFL_PRED
+  best_cost = RDCOST(x->rdmult, x->rddiv, 0, dist);
 
-  for (int c = 1; c < CFL_ALPHABET_SIZE; c++) {
+  for (int c = 0; c < CFL_ALPHABET_SIZE; c++) {
     for (int m = 0; m < CFL_ALPHABET_SIZE; m++) {
       const int idx_u = cfl_alpha_codes[CFL_PRED_U][c][m];
       const int idx_v = cfl_alpha_codes[CFL_PRED_V][c][m];
@@ -1897,7 +1898,7 @@ static int cfl_compute_alpha_ind(MACROBLOCK *const x, const CFL_CTX *const cfl,
       cost = RDCOST(x->rdmult, x->rddiv, rate, dist);
       if (cost < best_cost) {
         best_cost = cost;
-        ind = c;
+        ind = c + 1;
         mag = m;
       }
     }

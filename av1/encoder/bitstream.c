@@ -1846,15 +1846,14 @@ static void write_intra_uv_mode(FRAME_CONTEXT *frame_ctx,
 static void write_cfl_alphas(FRAME_CONTEXT *const frame_ctx, int uvec_idx,
                              int mag_idx, aom_writer *w) {
   // Check for uninitialized magnitude
-  if (uvec_idx == 0)
+  if (uvec_idx == 0) {
     assert(mag_idx == 0);
+    assert(0);
+  }
 
   // Write the index of the unit vector of alpha Cb and alpha Cr.
-  aom_write_symbol(w, uvec_idx, frame_ctx->cfl_uvec_cdf, CFL_ALPHABET_SIZE);
-
-  // Magnitudes are only signaled for nonzero vectors.
-  if (uvec_idx)
-    aom_write_symbol(w, mag_idx, frame_ctx->cfl_mag_cdf, CFL_ALPHABET_SIZE);
+  aom_write_symbol(w, uvec_idx - 1, frame_ctx->cfl_uvec_cdf, CFL_ALPHABET_SIZE);
+  aom_write_symbol(w, mag_idx, frame_ctx->cfl_mag_cdf, CFL_ALPHABET_SIZE);
 }
 #endif
 
@@ -1997,16 +1996,24 @@ static void pack_inter_mode_mvs(AV1_COMP *cpi, const int mi_row,
         }
       }
     }
+#if CONFIG_CFL
+    UV_PREDICTION_MODE uv_mode = mbmi->uv_mode;
+    if (uv_mode == UV_CFL_PRED && mbmi->cfl_uvec_idx == 0) {
+      uv_mode = UV_DC_PRED;
+    }
+#else
+    PREDICTION_MODE uv_mode = mbmi->uv_mode;
+#endif
 #if CONFIG_CB4X4
     if (is_chroma_reference(mi_row, mi_col, bsize, xd->plane[1].subsampling_x,
                             xd->plane[1].subsampling_y)) {
-      write_intra_uv_mode(ec_ctx, mbmi->uv_mode, mode, w);
+      write_intra_uv_mode(ec_ctx, uv_mode, mode, w);
 #else  // !CONFIG_CB4X4
-    write_intra_uv_mode(ec_ctx, mbmi->uv_mode, mode, w);
+    write_intra_uv_mode(ec_ctx, uv_mode, mode, w);
 #endif  // CONFIG_CB4X4
 
 #if CONFIG_CFL
-      if (mbmi->uv_mode == UV_CFL_PRED) {
+      if (uv_mode == UV_CFL_PRED) {
         write_cfl_alphas(ec_ctx, mbmi->cfl_uvec_idx, mbmi->cfl_mag_idx, w);
       }
 #endif
@@ -2354,16 +2361,24 @@ static void write_mb_modes_kf(AV1_COMMON *cm,
     }
   }
 
+#if CONFIG_CFL
+    UV_PREDICTION_MODE uv_mode = mbmi->uv_mode;
+    if (uv_mode == UV_CFL_PRED && mbmi->cfl_uvec_idx == 0) {
+      uv_mode = UV_DC_PRED;
+    }
+#else
+    PREDICTION_MODE uv_mode = mbmi->uv_mode;
+#endif
 #if CONFIG_CB4X4
   if (is_chroma_reference(mi_row, mi_col, bsize, xd->plane[1].subsampling_x,
                           xd->plane[1].subsampling_y)) {
-    write_intra_uv_mode(ec_ctx, mbmi->uv_mode, mbmi->mode, w);
+    write_intra_uv_mode(ec_ctx, uv_mode, mbmi->mode, w);
 #else  // !CONFIG_CB4X4
-  write_intra_uv_mode(ec_ctx, mbmi->uv_mode, mbmi->mode, w);
+  write_intra_uv_mode(ec_ctx, uv_mode, mbmi->mode, w);
 #endif  // CONFIG_CB4X4
 
 #if CONFIG_CFL
-    if (mbmi->uv_mode == UV_CFL_PRED) {
+    if (uv_mode == UV_CFL_PRED) {
       write_cfl_alphas(ec_ctx, mbmi->cfl_uvec_idx, mbmi->cfl_mag_idx, w);
     }
 #endif
