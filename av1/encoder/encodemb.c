@@ -1928,12 +1928,12 @@ static inline void cfl_update_costs(CFL_CTX *cfl, FRAME_CONTEXT *ec_ctx) {
     prob_num = AOM_ICDF(ec_ctx->cfl_uvec_cdf[c]) -
                AOM_ICDF(ec_ctx->cfl_uvec_cdf[c - 1]);
     shift = CDF_PROB_BITS - 1 - get_msb(prob_num);
-    cfl->uvec_costs[c] = av1_cost_zero(get_prob(prob_num, prob_den)) +
+    cfl->uvec_costs[c] = av1_cost_zero(get_prob(prob_num << shift, prob_den)) +
                          av1_cost_literal(shift);
     prob_num = AOM_ICDF(ec_ctx->cfl_mag_cdf[c]) -
                AOM_ICDF(ec_ctx->cfl_mag_cdf[c - 1]);
     shift = CDF_PROB_BITS - 1 - get_msb(prob_num);
-    cfl->mag_costs[c] = av1_cost_zero(get_prob(prob_num, prob_den)) +
+    cfl->mag_costs[c] = av1_cost_zero(get_prob(prob_num << shift, prob_den)) +
                         av1_cost_literal(shift);
   }
 }
