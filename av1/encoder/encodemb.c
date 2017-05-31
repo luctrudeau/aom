@@ -1916,17 +1916,25 @@ static inline void cfl_update_costs(CFL_CTX *cfl, FRAME_CONTEXT *ec_ctx) {
   const int prob_den = CDF_PROB_TOP;
 
   int prob_num = AOM_ICDF(ec_ctx->cfl_uvec_cdf[0]);
-  cfl->uvec_costs[0] = av1_cost_zero(get_prob(prob_num, prob_den));
+  int shift = CDF_PROB_BITS - 1 - get_msb(prob_num);
+  cfl->uvec_costs[0] = av1_cost_zero(get_prob(prob_num << shift, prob_den)) +
+                       av1_cost_literal(shift);
   prob_num = AOM_ICDF(ec_ctx->cfl_mag_cdf[0]);
-  cfl->mag_costs[0] = av1_cost_zero(get_prob(prob_num, prob_den));
+  shift = CDF_PROB_BITS - 1 - get_msb(prob_num);
+  cfl->mag_costs[0] = av1_cost_zero(get_prob(prob_num << shift, prob_den)) +
+                      av1_cost_literal(shift);
 
   for (int c = 1; c < CFL_ALPHABET_SIZE; c++) {
     prob_num = AOM_ICDF(ec_ctx->cfl_uvec_cdf[c]) -
                AOM_ICDF(ec_ctx->cfl_uvec_cdf[c - 1]);
-    cfl->uvec_costs[c] = av1_cost_zero(get_prob(prob_num, prob_den));
+    shift = CDF_PROB_BITS - 1 - get_msb(prob_num);
+    cfl->uvec_costs[c] = av1_cost_zero(get_prob(prob_num, prob_den)) +
+                         av1_cost_literal(shift);
     prob_num = AOM_ICDF(ec_ctx->cfl_mag_cdf[c]) -
                AOM_ICDF(ec_ctx->cfl_mag_cdf[c - 1]);
-    cfl->mag_costs[c] = av1_cost_zero(get_prob(prob_num, prob_den));
+    shift = CDF_PROB_BITS - 1 - get_msb(prob_num);
+    cfl->mag_costs[c] = av1_cost_zero(get_prob(prob_num, prob_den)) +
+                        av1_cost_literal(shift);
   }
 }
 
