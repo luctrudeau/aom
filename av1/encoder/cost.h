@@ -53,6 +53,15 @@ static INLINE int treed_cost(aom_tree tree, const aom_prob *probs, int bits,
   return cost;
 }
 
+static INLINE int av1_cost_cdf(const aom_cdf_prob *cdf, int val) {
+  int prob =
+      (val == 0) ? AOM_ICDF(*cdf)
+                 : AOM_ICDF(cdf[val]) - AOM_ICDF(cdf[val - 1]);
+  const int shift = CDF_PROB_BITS - 1 - get_msb(prob);
+  prob = ROUND_POWER_OF_TWO(prob << shift, CDF_PROB_BITS - 8);
+  return (prob == 256 ? 0 : av1_prob_cost[prob]) + av1_cost_literal(shift);
+}
+
 void av1_cost_tokens(int *costs, const aom_prob *probs, aom_tree tree);
 void av1_cost_tokens_skip(int *costs, const aom_prob *probs, aom_tree tree);
 

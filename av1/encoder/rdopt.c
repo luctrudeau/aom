@@ -4762,13 +4762,7 @@ static void rd_pick_palette_intra_sbuv(const AV1_COMP *const cpi, MACROBLOCK *x,
 #if CONFIG_CFL
 static int intra_uv_mode_cost(FRAME_CONTEXT *ec_ctx, PREDICTION_MODE y_mode,
                               UV_PREDICTION_MODE uv_mode) {
-  const int prob_num =
-      (uv_mode == 0) ? AOM_ICDF(ec_ctx->uv_mode_cdf[y_mode][uv_mode])
-                     : AOM_ICDF(ec_ctx->uv_mode_cdf[y_mode][uv_mode]) -
-                           AOM_ICDF(ec_ctx->uv_mode_cdf[y_mode][uv_mode - 1]);
-  const int shift = CDF_PROB_BITS - 1 - get_msb(prob_num);
-  return av1_cost_zero(get_prob(prob_num << shift, CDF_PROB_TOP)) +
-         av1_cost_literal(shift);
+  return av1_cost_cdf(ec_ctx->uv_mode_cdf[y_mode], uv_mode);
 }
 
 #endif  // CONFIG_CFL
