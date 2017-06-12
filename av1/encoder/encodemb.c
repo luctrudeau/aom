@@ -1885,7 +1885,6 @@ static int cfl_compute_alpha_ind(MACROBLOCK *const x, const CFL_CTX *const cfl,
 
   dist = sse[CFL_PRED_U][0] + sse[CFL_PRED_V][0];
   dist *= 16;
-  // TODO(barrbrain) use rate delta between UV_DC_PRED and UV_CFL_PRED
   best_cost = RDCOST(x->rdmult, x->rddiv, 0, dist);
 
   for (int c = 0; c < CFL_ALPHABET_SIZE; c++) {
@@ -1908,9 +1907,12 @@ static int cfl_compute_alpha_ind(MACROBLOCK *const x, const CFL_CTX *const cfl,
   return ind;
 }
 
-static inline void cfl_update_costs(CFL_CTX *cfl, FRAME_CONTEXT *ec_ctx) {
+static inline void cfl_update_costs(CFL_CTX *cfl, FRAME_CONTEXT *ec_ctx,
+                                    PREDICTION_MODE y_mode) {
+  int off = av1_cost_cdf(ec_ctx->uv_mode_cdf[y_mode], UV_CFL_PRED) -
+            av1_cost_cdf(ec_ctx->uv_mode_cdf[y_mode], UV_DC_PRED);
   for (int c = 0; c < CFL_ALPHABET_SIZE; c++) {
-    cfl->uvec_costs[c] = av1_cost_cdf(ec_ctx->cfl_uvec_cdf, c);
+    cfl->uvec_costs[c] = av1_cost_cdf(ec_ctx->cfl_uvec_cdf, c) + off;
     cfl->mag_costs[c] = av1_cost_cdf(ec_ctx->cfl_mag_cdf, c);
   }
 }
@@ -1925,7 +1927,7 @@ void av1_predict_intra_block_encoder_facade(MACROBLOCK *x,
   if (plane != AOM_PLANE_Y && mbmi->uv_mode == UV_CFL_PRED) {
     if (blk_col == 0 && blk_row == 0 && plane == AOM_PLANE_U) {
       CFL_CTX *const cfl = xd->cfl;
-      cfl_update_costs(cfl, ec_ctx);
+      cfl_update_costs(cfl, ec_ctx, mbmi->mode);
       cfl_dc_pred(xd, plane_bsize, tx_size);
       mbmi->cfl_uvec_idx =
           cfl_compute_alpha_ind(x, cfl, plane_bsize, &mbmi->cfl_mag_idx);
