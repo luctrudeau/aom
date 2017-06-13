@@ -93,10 +93,7 @@ void cfl_dc_pred(MACROBLOCKD *xd, BLOCK_SIZE plane_bsize, TX_SIZE tx_size);
 
 static INLINE double cfl_idx_to_alpha(int uvec_idx, int mag_idx,
                                       CFL_PRED_TYPE pred_type) {
-  if (uvec_idx == 0) {
-    assert(mag_idx == 0);
-    return 0.;
-  }
+  assert(uvec_idx != 0);
   const int idx = cfl_alpha_codes[pred_type][uvec_idx - 1][mag_idx];
   return cfl_alpha_mags[idx] * (1. / (1 << 15));
 }

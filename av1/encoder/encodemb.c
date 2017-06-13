@@ -1897,14 +1897,14 @@ static int cfl_compute_alpha_ind(MACROBLOCK *const x, const CFL_CTX *const cfl,
       cost = RDCOST(x->rdmult, x->rddiv, rate, dist);
       if (cost < best_cost) {
         best_cost = cost;
-        ind = c + 1;
+        ind = c;
         mag = m;
       }
     }
   }
 
   *mag_out = mag;
-  return ind;
+  return ind + 1;
 }
 
 static inline void cfl_update_costs(CFL_CTX *cfl, FRAME_CONTEXT *ec_ctx,
