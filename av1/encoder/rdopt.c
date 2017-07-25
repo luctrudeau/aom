@@ -5465,27 +5465,29 @@ static inline void cfl_update_costs(CFL_CTX *cfl, FRAME_CONTEXT *ec_ctx) {
       const int joint_sign = get_joint_sign(sign_u, sign_v);
       aom_cdf_prob curr_cdf = AOM_ICDF(ec_ctx->cfl_sign_cdf[joint_sign]);
       const int sign_cost = av1_cost_symbol(curr_cdf - prev_cdf);
-      prev_cdf = 0;
-      for (int u = 0; u < UV_ALPHABET_SIZE; u++) {
-        cfl->costs[joint_sign][CFL_PRED_U][u] = sign_cost;
+      prev_cdf = curr_cdf;
+
+      aom_cdf_prob prev_cdf_u = 0;
+      aom_cdf_prob prev_cdf_v = 0;
+      for (int uv = 0; uv < UV_ALPHABET_SIZE; uv++) {
+        cfl->costs[joint_sign][CFL_PRED_U][uv] = sign_cost;
+        cfl->costs[joint_sign][CFL_PRED_V][uv] = 0;
+
         if (sign_u != CFL_SIGN_ZERO) {
-          curr_cdf = AOM_ICDF(ec_ctx->cfl_alpha_cdf[joint_sign][CFL_PRED_U][u]);
-          cfl->costs[joint_sign][CFL_PRED_U][u] +=
-              av1_cost_symbol(curr_cdf - prev_cdf);
-          prev_cdf = curr_cdf;
+          curr_cdf =
+              AOM_ICDF(ec_ctx->cfl_alpha_cdf[joint_sign][CFL_PRED_U][uv]);
+          cfl->costs[joint_sign][CFL_PRED_U][uv] +=
+              av1_cost_symbol(curr_cdf - prev_cdf_u);
+          prev_cdf_u = curr_cdf;
         }
-      }
-      prev_cdf = 0;
-      for (int v = 0; v < UV_ALPHABET_SIZE; v++) {
-        cfl->costs[joint_sign][CFL_PRED_V][v] = 0;
         if (sign_v != CFL_SIGN_ZERO) {
-          curr_cdf = AOM_ICDF(ec_ctx->cfl_alpha_cdf[joint_sign][CFL_PRED_V][v]);
-          cfl->costs[joint_sign][CFL_PRED_V][v] =
-              av1_cost_symbol(curr_cdf - prev_cdf);
-          prev_cdf = curr_cdf;
+          curr_cdf =
+              AOM_ICDF(ec_ctx->cfl_alpha_cdf[joint_sign][CFL_PRED_V][uv]);
+          cfl->costs[joint_sign][CFL_PRED_V][uv] =
+              av1_cost_symbol(curr_cdf - prev_cdf_v);
+          prev_cdf_v = curr_cdf;
         }
       }
-      prev_cdf = AOM_ICDF(ec_ctx->cfl_sign_cdf[joint_sign]);
     }
   }
 }
