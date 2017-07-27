@@ -5587,31 +5587,29 @@ static int cfl_rd_pick_alpha(MACROBLOCK *const x, TX_SIZE tx_size) {
   best_rate = 0;
   best_cost = INT64_MAX;
 
-  for (CFL_SIGN_TYPE sign_u = 0; sign_u < CFL_SIGNS; sign_u++) {
-    for (CFL_SIGN_TYPE sign_v = !sign_u; sign_v < CFL_SIGNS; sign_v++) {
-      const int joint_sign = get_joint_sign(sign_u, sign_v);
-      for (int u = 0; u < UV_ALPHABET_SIZE; u++) {
-        const int idx_u = (sign_u == CFL_SIGN_ZERO) ? 0 : u * 2 + 1;
-        for (int v = 0; v < UV_ALPHABET_SIZE; v++) {
-          const int idx_v = (sign_v == CFL_SIGN_ZERO) ? 0 : v * 2 + 1;
-          assert(idx_u != 0 || idx_v != 0);
-          dist = sse[CFL_PRED_U][idx_u + (sign_u == CFL_SIGN_NEG)] +
-                 sse[CFL_PRED_V][idx_v + (sign_v == CFL_SIGN_NEG)];
-          dist *= 16;
-          const int rate = cfl->costs[joint_sign][CFL_PRED_U][u] +
-                           cfl->costs[joint_sign][CFL_PRED_V][v];
-          cost = RDCOST(x->rdmult, rate, dist);
-          if (cost < best_cost) {
-            best_cost = cost;
-            best_rate = rate;
-            ind = (u << UV_ALPHABET_SIZE_LOG2) + v;
-            signs[CFL_PRED_U] = sign_u;
-            signs[CFL_PRED_V] = sign_v;
-          }
-          if (sign_v == CFL_SIGN_ZERO) break;
+  for (int joint_sign = 0; joint_sign < CFL_JOINT_SIGNS; joint_sign++) {
+    const int sign_u = CFL_SIGN_U(joint_sign);
+    const int sign_v = CFL_SIGN_V(joint_sign);
+    for (int u = 0; u < UV_ALPHABET_SIZE; u++) {
+      const int idx_u = (sign_u == CFL_SIGN_ZERO) ? 0 : u * 2 + 1;
+      for (int v = 0; v < UV_ALPHABET_SIZE; v++) {
+        const int idx_v = (sign_v == CFL_SIGN_ZERO) ? 0 : v * 2 + 1;
+        dist = sse[CFL_PRED_U][idx_u + (sign_u == CFL_SIGN_NEG)] +
+               sse[CFL_PRED_V][idx_v + (sign_v == CFL_SIGN_NEG)];
+        dist *= 16;
+        const int rate = cfl->costs[joint_sign][CFL_PRED_U][u] +
+                         cfl->costs[joint_sign][CFL_PRED_V][v];
+        cost = RDCOST(x->rdmult, rate, dist);
+        if (cost < best_cost) {
+          best_cost = cost;
+          best_rate = rate;
+          ind = (u << UV_ALPHABET_SIZE_LOG2) + v;
+          signs[CFL_PRED_U] = sign_u;
+          signs[CFL_PRED_V] = sign_v;
         }
-        if (sign_u == CFL_SIGN_ZERO) break;
+        if (sign_v == CFL_SIGN_ZERO) break;
       }
+      if (sign_u == CFL_SIGN_ZERO) break;
     }
   }
 
