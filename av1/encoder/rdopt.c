@@ -5498,33 +5498,34 @@ static int64_t cfl_alpha_dist(const uint8_t *y_pix, int y_stride,
 static inline void cfl_update_costs(CFL_CTX *cfl, FRAME_CONTEXT *ec_ctx) {
   aom_cdf_prob prev_cdf = 0;
 
-  for (CFL_SIGN_TYPE sign_u = 0; sign_u < CFL_SIGNS; sign_u++) {
-    for (CFL_SIGN_TYPE sign_v = !sign_u; sign_v < CFL_SIGNS; sign_v++) {
-      const int joint_sign = get_joint_sign(sign_u, sign_v);
-      const CFL_ALPHA_CONTEXT ctx_u = get_alpha_context(joint_sign, CFL_PRED_U);
-      const CFL_ALPHA_CONTEXT ctx_v = get_alpha_context(joint_sign, CFL_PRED_V);
-      aom_cdf_prob curr_cdf = AOM_ICDF(ec_ctx->cfl_sign_cdf[joint_sign]);
-      const int sign_cost = av1_cost_symbol(curr_cdf - prev_cdf);
-      prev_cdf = curr_cdf;
+  for (int joint_sign = 0; joint_sign < CFL_JOINT_SIGNS; joint_sign++) {
+    aom_cdf_prob curr_cdf = AOM_ICDF(ec_ctx->cfl_sign_cdf[joint_sign]);
+    const int sign_cost = av1_cost_symbol(curr_cdf - prev_cdf);
+    prev_cdf = curr_cdf;
 
-      aom_cdf_prob prev_cdf_u = 0;
-      aom_cdf_prob prev_cdf_v = 0;
-      for (int uv = 0; uv < UV_ALPHABET_SIZE; uv++) {
-        cfl->costs[joint_sign][CFL_PRED_U][uv] = sign_cost;
-        cfl->costs[joint_sign][CFL_PRED_V][uv] = 0;
+    const aom_cdf_prob *ctx_u_cdf =
+        ec_ctx->cfl_alpha_cdf[get_alpha_context(joint_sign, CFL_PRED_U)];
+    const aom_cdf_prob *ctx_v_cdf =
+        ec_ctx->cfl_alpha_cdf[get_alpha_context(joint_sign, CFL_PRED_V)];
+    const int sign_u = CFL_SIGN_U(joint_sign);
+    const int sign_v = CFL_SIGN_V(joint_sign);
+    aom_cdf_prob prev_cdf_u = 0;
+    aom_cdf_prob prev_cdf_v = 0;
+    for (int uv = 0; uv < UV_ALPHABET_SIZE; uv++) {
+      cfl->costs[joint_sign][CFL_PRED_U][uv] = sign_cost;
+      cfl->costs[joint_sign][CFL_PRED_V][uv] = 0;
 
-        if (sign_u != CFL_SIGN_ZERO) {
-          curr_cdf = AOM_ICDF(ec_ctx->cfl_alpha_cdf[ctx_u][uv]);
-          cfl->costs[joint_sign][CFL_PRED_U][uv] +=
-              av1_cost_symbol(curr_cdf - prev_cdf_u);
-          prev_cdf_u = curr_cdf;
-        }
-        if (sign_v != CFL_SIGN_ZERO) {
-          curr_cdf = AOM_ICDF(ec_ctx->cfl_alpha_cdf[ctx_v][uv]);
-          cfl->costs[joint_sign][CFL_PRED_V][uv] =
-              av1_cost_symbol(curr_cdf - prev_cdf_v);
-          prev_cdf_v = curr_cdf;
-        }
+      if (sign_u != CFL_SIGN_ZERO) {
+        curr_cdf = AOM_ICDF(ctx_u_cdf[uv]);
+        cfl->costs[joint_sign][CFL_PRED_U][uv] +=
+            av1_cost_symbol(curr_cdf - prev_cdf_u);
+        prev_cdf_u = curr_cdf;
+      }
+      if (sign_v != CFL_SIGN_ZERO) {
+        curr_cdf = AOM_ICDF(ctx_v_cdf[uv]);
+        cfl->costs[joint_sign][CFL_PRED_V][uv] =
+            av1_cost_symbol(curr_cdf - prev_cdf_v);
+        prev_cdf_v = curr_cdf;
       }
     }
   }
