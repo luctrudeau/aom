@@ -676,7 +676,7 @@ check_xcode_minimum_version() {
 process_common_toolchain() {
   case "$toolchain" in
     *-vs*) ;;
-    *) add_cflags_only -std=c99 ;;
+    *) add_cflags_only -std=gnu99 ;;
   esac
 
   if [ -z "$toolchain" ]; then

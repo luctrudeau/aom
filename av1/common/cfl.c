@@ -14,6 +14,7 @@
 #include "av1/common/onyxc_int.h"
 
 #include "aom/internal/aom_codec_internal.h"
+#include "av1/common/ffmpeg_timer.h"
 
 void cfl_init(CFL_CTX *cfl, AV1_COMMON *cm) {
   if (!((cm->subsampling_x == 0 && cm->subsampling_y == 0) ||
@@ -26,6 +27,33 @@ void cfl_init(CFL_CTX *cfl, AV1_COMMON *cm) {
   cfl->subsampling_y = cm->subsampling_y;
   cfl->are_parameters_computed = 0;
 }
+
+void aom_cfl_luma_subsampling_420_sse2(const uint8_t *y_pix, uint8_t *output,
+                                       int width, int height);
+
+void aom_cfl_luma_subsampling_420_avx2(const uint8_t *y_pix, uint8_t *output,
+                                       int width, int height);
+
+static void cfl_luma_subsampling_420(const uint8_t *y_pix, uint8_t *output,
+                                     int width, int height) {
+  for (int j = 0; j < height; j++) {
+    for (int i = 0; i < width; i++) {
+      int top_left = i << 1;
+      int sum = 0;
+      sum += y_pix[top_left] + y_pix[top_left + 1];
+      sum += y_pix[top_left + 64] + y_pix[top_left + 64 + 1];
+
+      sum += 2;
+      sum >>= 2;
+      output[i] = sum;
+      // output[i] = y_pix[top_left] + y_pix[top_left + 64];
+    }
+    y_pix += 128;
+    output += 64;
+  }
+}
+
+uint8_t debug_buf[MAX_SB_SQUARE];
 
 // Load from the CfL pixel buffer into output
 static void cfl_load(CFL_CTX *cfl, int row, int col, int width, int height) {
@@ -55,20 +83,43 @@ static void cfl_load(CFL_CTX *cfl, int row, int col, int width, int height) {
     }
   } else if (sub_y == 1 && sub_x == 1) {
     y_pix = &cfl->y_pix[(row * MAX_SB_SIZE + col) << (off_log2 + sub_y)];
-    for (int j = 0; j < height; j++) {
-      for (int i = 0; i < width; i++) {
-        int top_left = (pred_row_offset + i) << sub_y;
-        int bot_left = top_left + MAX_SB_SIZE;
-        // In 4:2:0, average pixels in 2x2 grid
-        output[output_row_offset + i] = OD_SHR_ROUND(
-            y_pix[top_left] + y_pix[top_left + 1]        // Top row
-                + y_pix[bot_left] + y_pix[bot_left + 1]  // Bottom row
-            ,
-            2);
-      }
-      pred_row_offset += MAX_SB_SIZE;
-      output_row_offset += MAX_SB_SIZE;
+    if (width == 32 && height == 32) {
+      START_TIMER
+      aom_cfl_luma_subsampling_420_avx2(y_pix, output, width, height);
+      // cfl_luma_subsampling_420(y_pix, output, width, height);
+      STOP_TIMER("Speed");
+      //      /*for (int j = 0; j < height; j++) {
+      //        for (int i = 0; i < width; i++) {
+      //          printf("(%i %i) %d == %d\n", j, i,
+      //      output[j * MAX_SB_SIZE + i],
+      //                 debug_buf[j * MAX_SB_SIZE +
+      //      i]);
+      //          //          assert(output[j *
+      //      MAX_SB_SIZE + i] == debug_buf[j *
+      //          //          MAX_SB_SIZE + i]);
+      //        }
+      //      }
+      //      printf("=====================\n");
+      //      assert(0);*/
+    } else {
+      cfl_luma_subsampling_420(y_pix, output, width, height);
     }
+    /*     for (int j = 0; j < height; j++) {
+           for (int i = 0; i < width; i++) {
+             int top_left = (pred_row_offset + i) << sub_y;
+             int bot_left = top_left + MAX_SB_SIZE;
+             // In 4:2:0, average pixels in 2x2 grid
+             output[output_row_offset + i] = OD_SHR_ROUND(
+                 y_pix[top_left] + y_pix[top_left + 1]        // Top row
+                     + y_pix[bot_left] + y_pix[bot_left + 1]  // Bottom
+       row
+                 ,
+                 2);
+           }
+           pred_row_offset += MAX_SB_SIZE;
+           output_row_offset += MAX_SB_SIZE;
+         }
+         */
   } else {
     assert(0);  // Unsupported chroma subsampling
   }

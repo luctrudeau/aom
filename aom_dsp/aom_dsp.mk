@@ -240,6 +240,8 @@ DSP_SRCS-$(HAVE_SSSE3)  += x86/inv_txfm_ssse3.c
 DSP_SRCS-$(HAVE_AVX2)   += x86/inv_txfm_common_avx2.h
 DSP_SRCS-$(HAVE_AVX2)   += x86/inv_txfm_avx2.c
 
+DSP_SRCS-$(HAVE_SSE2)   += x86/cfl_sse2.asm
+
 ifeq ($(HAVE_NEON_ASM),yes)
 DSP_SRCS-yes  += arm/save_reg_neon$(ASM)
 DSP_SRCS-yes  += arm/idct4x4_1_add_neon$(ASM)
