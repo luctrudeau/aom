@@ -84,21 +84,20 @@ static void cfl_load(CFL_CTX *cfl, int row, int col, int width, int height) {
     y_pix = &cfl->y_pix[(row * MAX_SB_SIZE + col) << (off_log2 + sub_y)];
     if (width == 32 && height == 32) {
       START_TIMER
-      // aom_cfl_luma_subsampling_420_avx2(y_pix, output, width, height);
-      aom_cfl_luma_subsampling_420_sse2(y_pix, output, width, height);
+      aom_cfl_luma_subsampling_420_avx2(y_pix, output, width, height);
+      // aom_cfl_luma_subsampling_420_sse2(y_pix, output, width, height);
       // cfl_luma_subsampling_420(y_pix, output, width, height);
       STOP_TIMER("Speed");
-      /*      for (int j = 0; j < height; j++) {
-              for (int i = 0; i < width; i++) {
-                printf("(%i %i) %d == %d\n", j, i, output[j * MAX_SB_SIZE + i],
-                       debug_buf[j * MAX_SB_SIZE + i]);
-                assert(output[j * MAX_SB_SIZE + i] == debug_buf[j * MAX_SB_SIZE
-         + i]);
-              }
-            }
-            printf("=====================\n");
-            assert(0);
-            */
+      /*for (int j = 0; j < height; j++) {
+        for (int i = 0; i < width; i++) {
+          printf("(%i %i) %d == %d\n", j, i, output[j * MAX_SB_SIZE + i],
+                 debug_buf[j * MAX_SB_SIZE + i]);
+          assert(output[j * MAX_SB_SIZE + i] == debug_buf[j * MAX_SB_SIZE + i]);
+        }
+      }
+      printf("=====================\n");
+      //      assert(0);
+      */
     } else {
       cfl_luma_subsampling_420(y_pix, output, width, height);
     }

@@ -58,7 +58,7 @@ mova m5, [zero_upper]
 
 %if cpuflag(avx2)
     vextracti128 xm1, m0, 1
-    punpckhqdq xm0, xm0, xm1
+    punpcklqdq xm0, xm0, xm1
     movu [outputq + counter_wq], xm0
 %else
     movq [outputq + counter_wq], m0
@@ -66,7 +66,7 @@ mova m5, [zero_upper]
 
 
 %if cpuflag(avx2)
-   add counter_wq, 8
+    add counter_wq, 16
 %else
     add counter_wq, 8
 %endif
