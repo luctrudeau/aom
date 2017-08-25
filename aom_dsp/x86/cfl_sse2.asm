@@ -24,10 +24,7 @@ SECTION .text
 %macro CFL_FN 0
 cglobal cfl_luma_subsampling_420, 4, 9, 8, y_pix, output, width, height
 
-%define counter_hq r7q
 %define counter_wq r8q
-
-xor counter_hq, counter_hq
 
 mova m4, [all_2s]
 mova m5, [zero_upper]
@@ -76,9 +73,8 @@ mova m5, [zero_upper]
   add y_pixq, 128
   add outputq, 64
 
-  add counter_hq, 1
-  cmp counter_hq, heightq
-  jl .loop_h
+  dec heightq
+  jg .loop_h
 
 
     RET
